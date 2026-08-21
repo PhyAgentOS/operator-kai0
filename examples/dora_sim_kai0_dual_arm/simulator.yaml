@@ -1,0 +1,110 @@
+# 双臂仿真器配置（基于 forge_studio dual_arm_sim_pi05 模板）
+# model_path 指向本目录 mjcf/ 的本地变体：在 taskrobots 原场景（table+双臂）上
+# 添加了装箱任务道具（纸箱/青色物体/胶带/保护袋）与补光，详见 mjcf/ 内 XML 注释。
+# 相对路径按 dora run 的工作目录（本示例目录，run.sh 已 cd）解析。
+model_path: mjcf/Bimanual_PIPER_withTable_aloha.xml
+control_hz: 50
+
+joints:
+  - { name: robot_left/joint1, mode: position, unit: radians }
+  - { name: robot_left/joint2, mode: position, unit: radians }
+  - { name: robot_left/joint3, mode: position, unit: radians }
+  - { name: robot_left/joint4, mode: position, unit: radians }
+  - { name: robot_left/joint5, mode: position, unit: radians }
+  - { name: robot_left/joint6, mode: position, unit: radians }
+  - name: robot_left/gripper
+    mode: prismatic
+    unit: meters
+    # 两指总开口（m）= joint7 - joint8；equality 约束 joint8 = -joint7。
+    state_from_joints: [robot_left/joint7, robot_left/joint8]
+    state_expr: diff
+    state_scale: 1.0
+  - { name: robot_right/joint1, mode: position, unit: radians }
+  - { name: robot_right/joint2, mode: position, unit: radians }
+  - { name: robot_right/joint3, mode: position, unit: radians }
+  - { name: robot_right/joint4, mode: position, unit: radians }
+  - { name: robot_right/joint5, mode: position, unit: radians }
+  - { name: robot_right/joint6, mode: position, unit: radians }
+  - name: robot_right/gripper
+    mode: prismatic
+    unit: meters
+    # 两指总开口（m）= joint7 - joint8；equality 约束 joint8 = -joint7。
+    state_from_joints: [robot_right/joint7, robot_right/joint8]
+    state_expr: diff
+    state_scale: 1.0
+
+robots:
+  - id: piper_left
+    prefix: ""
+    joints:
+      - robot_left/joint1
+      - robot_left/joint2
+      - robot_left/joint3
+      - robot_left/joint4
+      - robot_left/joint5
+      - robot_left/joint6
+      - robot_left/gripper
+    actuator_order:
+      - robot_left/joint1
+      - robot_left/joint2
+      - robot_left/joint3
+      - robot_left/joint4
+      - robot_left/joint5
+      - robot_left/joint6
+      - robot_left/gripper
+    joint_to_actuator:
+      robot_left/joint1: robot_left/joint1
+      robot_left/joint2: robot_left/joint2
+      robot_left/joint3: robot_left/joint3
+      robot_left/joint4: robot_left/joint4
+      robot_left/joint5: robot_left/joint5
+      robot_left/joint6: robot_left/joint6
+      robot_left/gripper: robot_left/gripper
+  - id: piper_right
+    prefix: ""
+    joints:
+      - robot_right/joint1
+      - robot_right/joint2
+      - robot_right/joint3
+      - robot_right/joint4
+      - robot_right/joint5
+      - robot_right/joint6
+      - robot_right/gripper
+    actuator_order:
+      - robot_right/joint1
+      - robot_right/joint2
+      - robot_right/joint3
+      - robot_right/joint4
+      - robot_right/joint5
+      - robot_right/joint6
+      - robot_right/gripper
+    joint_to_actuator:
+      robot_right/joint1: robot_right/joint1
+      robot_right/joint2: robot_right/joint2
+      robot_right/joint3: robot_right/joint3
+      robot_right/joint4: robot_right/joint4
+      robot_right/joint5: robot_right/joint5
+      robot_right/joint6: robot_right/joint6
+      robot_right/gripper: robot_right/gripper
+
+image_format: raw
+image_jpeg_quality: 90
+image_forward:
+  top:
+    output: image/top
+    fps: 30
+    width: 640
+    height: 480
+  # 腕部相机已修正为真机约定：left = 左腕（挂 robot_left）、right = 右腕（挂 robot_right），
+  # 与策略契约 hand_left=左腕 / hand_right=右腕 一致。原 taskrobots 命名左右相反
+  # （名为 left 的相机挂右臂），已在 MJCF 中改名并注释。
+  left:
+    output: image/left
+    fps: 30
+    width: 640
+    height: 480
+  right:
+    output: image/right
+    fps: 30
+    width: 640
+    height: 480

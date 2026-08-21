@@ -1,0 +1,15 @@
+[project]
+name = "forge-robots-msgs"
+version = "0.1.0"
+description = "VENDOR：机器人消息类型（ActuatorValue/RobotAction/RobotState）——上游 forge_msgs 未发布的 API（见 VENDOR.md）"
+readme = "VENDOR.md"
+requires-python = ">=3.12"
+dependencies = [
+    "forge-msgs",
+    "numpy>=1.24",
+    "pyarrow",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,44 @@
+[project]
+name = "dora-real-kai0-dual-arm"
+version = "0.1.0"
+description = "双臂真机闭环示例的合并环境：kai0_policy 节点 + task_robot + piper_slave×2 + usb_camera×3 的统一 uv 运行环境（源码模式）"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dora-rs==0.4.1",
+    # forge-msgs / forge-common 由 kai0-inference 依赖传递（git 源 1.0.0 发布版），
+    # 并在下方 [tool.uv.sources] 显式声明同源，供机器人节点（robot-core）解析。
+    "kai0-inference>=0.1.0",
+    "numpy==1.26.4",
+    "pyyaml>=6.0",
+    # 真机节点依赖（vendor 层）：Piper 驱动（vendor 自 forge_robots，import 重定向版）
+    # + 机器人消息类型（上游 forge_msgs 未发布的 API）+ 节点公共库（vendor 修复版）
+    "forge-robots-msgs>=0.1.0",
+    "robots-piper>=0.1.0",
+    "robot-core>=0.1.0",
+]
+
+[tool.uv.sources]
+# kai0 策略节点（仓库内，相对本目录）
+kai0-inference = { path = "../..", editable = true }
+# 真机节点依赖（vendor 修复版；来源/修复见各 vendor/*/VENDOR.md）。
+# 不用框架工作区 path 源：上游 robot_core/piper 引用了 forge_msgs 从未发布的 API
+# （RobotAction/RobotState/forge_msgs.value），且其 meta-emt dev 源与 1.0.0 双源冲突。
+forge-robots-msgs = { path = "vendor/forge_robots_msgs" }
+robots-piper = { path = "vendor/robots_piper" }
+robot-core = { path = "vendor/robot_core" }
+# 与 kai0-inference 的 sources 一致（同一 tag 发布版），供 robot-core 的 forge-msgs 依赖解析
+forge-msgs = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-msgs-v1.0.0", subdirectory = "packages/msgs" }
+forge-common = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-common-v1.0.0", subdirectory = "packages/common" }
+
+[dependency-groups]
+dev = []
+
+[tool.uv]
+# 示例节点互不依赖；dora --uv 从本目录解析本项目环境。
+# robot-core 自身声明 forge-msgs 为框架 dev 源，与 kai0-inference 的 1.0.0 发布版冲突；
+# 以 override 统一到 1.0.0 发布版（与策略节点同版，避免线格式漂移）。
+# 真机联调时若机器人节点报 forge_msgs schema 差异，再评估切到 dev 源。
+override-dependencies = [
+    "forge-msgs @ git+https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git@forge-msgs-v1.0.0#subdirectory=packages/msgs",
+]
+package = false

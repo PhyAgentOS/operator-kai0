@@ -1,0 +1,14 @@
+[project]
+name = "robot-core"
+version = "0.1.0"
+description = "VENDOR（修复版）：forge_robots robot_core，用于真机示例 venv（来源与修复见 VENDOR.md）"
+readme = "VENDOR.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dora-rs==0.4.1",
+    "forge-msgs",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

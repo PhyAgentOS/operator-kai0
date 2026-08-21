@@ -1,0 +1,56 @@
+[project]
+name = "kai0-inference"
+version = "0.1.0"
+description = "kai0 (openpi/JAX) policy node for Forge: WS client adapter with Dora inference runtime"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # numpy 1.26 与传输层（websockets/msgpack 字典线格式 codec）及 fake server（numpy<2）兼容
+    "numpy==1.26.4",
+    "PyYAML>=6.0",
+
+    # WS 传输层（同步模式短连接）
+    "websockets>=13.0",
+    "msgpack>=1.0.5",
+
+    "forge-msgs==1.0.0",
+    "forge-common==1.0.0",
+    "forge-policy==1.0.0",
+    "dora-rs==0.4.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+# 统一入口：kai0 <infer|infer-once> ...
+kai0 = "kai0_inference.cli:main"
+# 兼容旧命令名（自动注入对应子命令）
+kai0-infer-once = "kai0_inference.cli:main_infer_once"
+kai0-infer = "kai0_inference.cli:main_infer"
+
+[tool.uv.sources]
+forge-msgs = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-msgs-v1.0.0", subdirectory = "packages/msgs" }
+forge-common = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-common-v1.0.0", subdirectory = "packages/common" }
+forge-policy = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-policy-v1.0.0", subdirectory = "packages/policy" }
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+only-packages = false
+
+[tool.hatch.build.targets.wheel.force-include]
+"__init__.py" = "kai0_inference/__init__.py"
+"__main__.py" = "kai0_inference/__main__.py"
+"cli.py" = "kai0_inference/cli.py"
+"inference" = "kai0_inference/inference"
+"common" = "kai0_inference/common"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]

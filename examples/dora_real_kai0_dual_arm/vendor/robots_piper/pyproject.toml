@@ -1,0 +1,18 @@
+[project]
+name = "robots-piper"
+version = "0.1.0"
+description = "VENDOR：Piper 硬件驱动（上游 forge_robots packages/piper，import 重定向版，见 VENDOR.md）"
+readme = "VENDOR.md"
+requires-python = ">=3.12"
+dependencies = [
+    "forge-common",
+    "forge-robots-msgs",
+    "piper-sdk>=0.6.1",
+    "python-can>=4.0",
+    "robot-core",
+    "pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

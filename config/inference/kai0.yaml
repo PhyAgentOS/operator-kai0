@@ -1,0 +1,46 @@
+# kai0（χ₀）策略节点配置（同步模式 WS 客户端：短连接 + chunk 摊销）
+# 同步模式保留作调试与回退；**推荐默认路径是 RTC**（config/inference/kai0_rtc.yaml，
+# 与真机客户端口径一致，服务端须以 --rtc 启动）。
+# joints 顺序即 14 维全局动作契约：左 6 关节+左夹爪、右 6 关节+右夹爪，
+# 与 robot_router / kai0 服务端一致（常量见 inference/contract.py，禁止散落字面量）。
+# 单位契约：服务端夹爪为毫米（训练数据域），节点侧换算为米（见 contract.py）。
+#
+# smoke（仓库根目录，需真实服务端已启动；启动方式见 README「启动推理服务端」）：
+#   uv run kai0 infer-once --config config/inference/kai0.yaml
+# 无服务端链路调试（DummyAdapter，不连网）：--config config/inference/dummy.yaml
+# Dora（仿真示例，见 examples/dora_sim_kai0_dual_arm，同步模式）：
+#   bash scripts/start_sim.sh [秒数] --sync
+
+joints:
+  - { name: robot_left/joint1, mode: position, unit: radians }
+  - { name: robot_left/joint2, mode: position, unit: radians }
+  - { name: robot_left/joint3, mode: position, unit: radians }
+  - { name: robot_left/joint4, mode: position, unit: radians }
+  - { name: robot_left/joint5, mode: position, unit: radians }
+  - { name: robot_left/joint6, mode: position, unit: radians }
+  # 左右 gripper 均表示两指总开口，范围为 0..0.105 m。
+  - { name: robot_left/gripper, mode: prismatic, unit: meters }
+  - { name: robot_right/joint1, mode: position, unit: radians }
+  - { name: robot_right/joint2, mode: position, unit: radians }
+  - { name: robot_right/joint3, mode: position, unit: radians }
+  - { name: robot_right/joint4, mode: position, unit: radians }
+  - { name: robot_right/joint5, mode: position, unit: radians }
+  - { name: robot_right/joint6, mode: position, unit: radians }
+  - { name: robot_right/gripper, mode: prismatic, unit: meters }
+
+state_joints: [robot_left/joint1, robot_left/joint2, robot_left/joint3, robot_left/joint4, robot_left/joint5, robot_left/joint6, robot_left/gripper, robot_right/joint1, robot_right/joint2, robot_right/joint3, robot_right/joint4, robot_right/joint5, robot_right/joint6, robot_right/gripper]
+
+policy:
+  type: kai0          # 同步模式 WS 客户端（registry 中唯一真实实现）
+  policy_id: kai0
+  auto_start: false   # 真机由 gateway policy_command 驱动；仿真置 true（无 gateway 自主运行）
+  server_url: ws://127.0.0.1:8000   # kai0 推理服务端（真实 serve_policy；adapter 单测注入 fake transport，见 tests/）
+  instruction: ""     # fixed 模式 prompt（openpi prompt 契约）
+  timeout_s: 60.0     # 单请求超时（秒）
+  # execute_action_steps: 50  # 可选：每个动作块最多执行步数（默认整块摊销）
+
+# dora 图像输入 id → kai0 服务端 alias（契约 contract.CAMERA_ALIASES）
+image_inputs:
+  image/top: top_head
+  image/left: hand_left
+  image/right: hand_right

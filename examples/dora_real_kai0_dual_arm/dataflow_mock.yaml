@@ -1,0 +1,102 @@
+# 双臂真机（mock 末端 / 软件在环）：与 dataflow.yaml 同拓扑，仅将
+# piper_slave×2 / usb_camera×3 替换为 mock 节点（nodes/mock_piper.py 复用
+# robot_core.run_dora_robot_node 标准节点循环，只换 FakeDriver；mock_camera 输出假帧）。
+# 用于无硬件验收：真实服务端 + 真实策略节点 + task_robot / 单位桥全链路打通。
+#
+# 运行（无硬件，真实服务端已 --rtc 启动）：
+#   bash scripts/start_real.sh --mock
+# 其余节点与真机 dataflow.yaml 完全一致（含单位链与 tick 频率）。
+
+nodes:
+  # Mock 相机（替代 usb_camera×3）：三路独立实例，seed 不同以区分画面
+  - id: camera_top
+    path: nodes/mock_camera.py
+    inputs:
+      tick: dora/timer/millis/33
+    outputs:
+      - image
+    args: --seed 1
+
+  - id: camera_left
+    path: nodes/mock_camera.py
+    inputs:
+      tick: dora/timer/millis/33
+    outputs:
+      - image
+    args: --seed 2
+
+  - id: camera_right
+    path: nodes/mock_camera.py
+    inputs:
+      tick: dora/timer/millis/33
+    outputs:
+      - image
+    args: --seed 3
+
+  # Mock 双臂（替代真机 piper 节点）：同一节点循环 + FakeDriver
+  - id: piper_slave_left
+    path: nodes/mock_piper.py
+    inputs:
+      action: task_robot/piper_left/action
+      tick: dora/timer/millis/50
+    outputs:
+      - state
+    args: --debug
+
+  - id: piper_slave_right
+    path: nodes/mock_piper.py
+    inputs:
+      action: task_robot/piper_right/action
+      tick: dora/timer/millis/50
+    outputs:
+      - state
+    args: --debug
+
+  # 以下与 dataflow.yaml 完全相同
+  - id: task_robot
+    path: ../../../../../forge_runtime/packages/nodes/task_robot/main.py
+    inputs:
+      tick: dora/timer/millis/50
+      action: kai0_unit_bridge/action
+      piper_left/state: piper_slave_left/state
+      piper_right/state: piper_slave_right/state
+      image/top: camera_top/image
+      image/left: camera_left/image
+      image/right: camera_right/image
+    outputs:
+      - piper_left/action
+      - piper_right/action
+      - proprio_state
+      - image/top
+      - image/left
+      - image/right
+    args: --config task_robot.yaml
+
+  - id: kai0_unit_bridge
+    path: nodes/kai0_unit_bridge.py
+    inputs:
+      action: kai0_policy/action
+      proprio_state: task_robot/proprio_state
+    outputs:
+      - action
+      - proprio_state
+
+  - id: kai0_policy
+    path: nodes/kai0_main.py
+    inputs:
+      tick: dora/timer/millis/50
+      proprio_state: kai0_unit_bridge/proprio_state
+      image/top: task_robot/image/top
+      image/left: task_robot/image/left
+      image/right: task_robot/image/right
+    outputs:
+      - action
+    args: >-
+      infer --config kai0_rtc.yaml
+
+  - id: image_viewer
+    path: ../../../../../forge_runtime/target/release/image_viewer
+    inputs:
+      image/top: task_robot/image/top
+      image/left: task_robot/image/left
+      image/right: task_robot/image/right

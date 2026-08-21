@@ -1,0 +1,44 @@
+# 双臂仿真：kai0（χ₀）策略节点配置
+# 复制自仓库 config/inference/kai0.yaml，适配项：
+# - auto_start: true —— 仿真 dataflow 无 gateway，节点启动即运行（不依赖 policy_command）
+# - server_url: ws://127.0.0.1:8000 —— 真实 kai0 推理服务端（本仓库 scripts/start_server.sh，
+#   run.sh 启动前会先做 /healthz 检查）
+# 其余（joints 14 维契约、image_inputs 映射、单位契约）与仓库配置一致，
+# 契约常量见 inference/contract.py，禁止散落字面量。
+#
+# 运行（本目录）：
+#   bash run.sh
+
+joints:
+  - { name: robot_left/joint1, mode: position, unit: radians }
+  - { name: robot_left/joint2, mode: position, unit: radians }
+  - { name: robot_left/joint3, mode: position, unit: radians }
+  - { name: robot_left/joint4, mode: position, unit: radians }
+  - { name: robot_left/joint5, mode: position, unit: radians }
+  - { name: robot_left/joint6, mode: position, unit: radians }
+  # 左右 gripper 均表示两指总开口，范围为 0..0.105 m。
+  - { name: robot_left/gripper, mode: prismatic, unit: meters }
+  - { name: robot_right/joint1, mode: position, unit: radians }
+  - { name: robot_right/joint2, mode: position, unit: radians }
+  - { name: robot_right/joint3, mode: position, unit: radians }
+  - { name: robot_right/joint4, mode: position, unit: radians }
+  - { name: robot_right/joint5, mode: position, unit: radians }
+  - { name: robot_right/joint6, mode: position, unit: radians }
+  - { name: robot_right/gripper, mode: prismatic, unit: meters }
+
+state_joints: [robot_left/joint1, robot_left/joint2, robot_left/joint3, robot_left/joint4, robot_left/joint5, robot_left/joint6, robot_left/gripper, robot_right/joint1, robot_right/joint2, robot_right/joint3, robot_right/joint4, robot_right/joint5, robot_right/joint6, robot_right/gripper]
+
+policy:
+  type: kai0          # 同步模式 WS 客户端（registry 唯一真实实现）
+  policy_id: kai0
+  auto_start: true    # 仿真无 gateway：节点启动即运行（真机置 false，随 policy_command 驱动）
+  server_url: ws://127.0.0.1:8000   # fake server（开发/仿真）；接真实服务端时改为 serve_policy 地址
+  instruction: ""     # fixed 模式 prompt（fake server 忽略）
+  timeout_s: 60.0     # 单请求超时（秒）
+  # execute_action_steps: 50  # 可选：每个动作块最多执行步数（默认整块摊销）
+
+# dora 图像输入 id → kai0 服务端 alias（契约 contract.CAMERA_ALIASES）
+image_inputs:
+  image/top: top_head
+  image/left: hand_left
+  image/right: hand_right

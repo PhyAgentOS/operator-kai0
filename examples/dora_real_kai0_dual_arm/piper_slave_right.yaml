@@ -1,0 +1,14 @@
+# Piper 右从站配置（真机示例）
+# 按现场 CAN 端口修改 port；端口与机械臂对应关系可用
+#   python main.py gripper-cycle <port>   （或打包产物 robot_piper gripper-cycle <port>）
+# 观察哪只臂在动来确认。
+#
+# 启动回零（参考 real_deploy 定型口径）：连接后不一次性冲零
+# （PiperDriver auto_set_safety_position=False），改为从当前反馈位置
+# 以 cubic smoothstep 插值回零（8s / 25Hz），完成前节点不进入循环。
+port: can_follower_r
+is_follower: true
+debug: false
+startup_return_to_zero: true
+startup_zero_duration_s: 8.0
+startup_zero_rate_hz: 25

@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# uv（不带尾斜杠：同时覆盖真实目录与指向 venv 的符号链接）
+.venv
+
+# 仿真示例运行产物
+out/
+*.log
+examples/*/uv.lock
+
+# checkpoint 权重（部署人员单独分发，不进仓库；放置约定见 ckpt/README.md）
+ckpt/*
+!ckpt/README.md
+
+# 服务端运行缓存（tokenizer 等；OPENPI_DATA_HOME 默认位置）
+cache/

@@ -1,0 +1,25 @@
+[project]
+name = "fake-policy-server"
+version = "0.1.0"
+description = "WebSocket 策略服务模拟器，与 openpi websocket_policy_server 协议对齐，用于无权重/无 GPU 的链路测试。"
+requires-python = ">=3.11"
+dependencies = [
+    "websockets>=13.0",
+    "msgpack>=1.0.5",
+    "numpy>=1.22.4,<2.0.0",
+    # 与 openpi-client 一致的 numpy 扩展编解码（lebedov/msgpack-numpy 线格式）
+    "msgpack-numpy>=0.4.8",
+]
+
+[project.scripts]
+fake-policy-server = "fake_policy_server.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

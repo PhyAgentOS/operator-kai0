@@ -1,0 +1,28 @@
+[project]
+name = "dora-sim-kai0-dual-arm"
+version = "0.1.0"
+description = "双臂仿真闭环示例的合并环境：kai0_policy 节点 + robot_router + mujoco 仿真的统一 uv 运行环境（源码模式）"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dora-rs==0.4.1",
+    # forge-msgs / forge-common / forge-policy 不在此直接声明：
+    # 由 kai0-inference 依赖传递安装（git 源 1.0.0 发布版，与其自身环境一致）。
+    # 根项目再声明会与 kai0-inference 的 git 源冲突（uv 不允许同包双来源）。
+    "kai0-inference>=0.1.0",
+    "mujoco==3.3.7",
+    "numpy==1.26.4",
+    "opencv-python",
+    "pyyaml>=6.0",
+]
+
+[tool.uv.sources]
+# kai0 策略节点（仓库内，相对本目录）
+kai0-inference = { path = "../..", editable = true }
+
+[dependency-groups]
+dev = []
+
+[tool.uv]
+# 示例节点互不依赖；dora --uv 从本目录解析本项目环境。
+# numpy 1.26.4：kai0-inference（numpy<2 约束）与 mujoco/openCV 兼容。
+package = false

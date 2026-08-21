@@ -1,0 +1,103 @@
+# 双臂 14 维仿真（RTC 异步推理变体）：
+# kai0_policy（kai0_runner RTC WS 客户端节点）→ robot_router → mujoco 仿真 + image_viewer 画面
+#
+# 与 dataflow.yaml 的差异仅 kai0_policy 的 config（kai0_rtc.yaml：RTC 常驻连接 +
+# 后台推理线程）。服务端须以 _rtc 配置启动（scripts/start_server.sh --rtc，
+# 权重与非 RTC 共用同一 checkpoint），start_sim.sh 启动前先做 /healthz 检查。
+#
+# 运行：bash scripts/start_sim.sh [秒数]
+# 注意：源码模式下 robot_router / mujoco_sim / image_viewer 直接指向 Forge 框架
+# 工作区（相对路径上溯 5 级，默认布局 <框架根>/policies/embodied/kai0_runner）；
+# 各节点以打包二进制运行后此说明作废。
+
+nodes:
+  # 仿真画面风格补偿：三路画面线性增益，对齐训练相机画面分布（详见 nodes/camera_style.py；
+  # 真机部署不经过此节点）。kai0_policy 与 frame_capture 订阅补偿后画面，image_viewer 保留原画。
+  - id: camera_style
+    path: nodes/camera_style.py
+    inputs:
+      image/top: mujoco/image/top
+      image/left: mujoco/image/left
+      image/right: mujoco/image/right
+    outputs:
+      - image/top
+      - image/left
+      - image/right
+
+  # kai0 策略节点（RTC）：tick 驱动；推理线程请求观测时组帧，动作流缓冲持续供流
+  - id: kai0_policy
+    path: nodes/kai0_main.py
+    inputs:
+      tick: dora/timer/millis/20
+      proprio_state: robot_router/proprio_state
+      image/top: camera_style/image/top
+      image/left: camera_style/image/left
+      image/right: camera_style/image/right
+    outputs:
+      - action
+    args: >-
+      infer --config kai0_rtc.yaml
+
+  - id: robot_router
+    path: ../../../../../forge_robot_router/main.py
+    inputs:
+      action: kai0_policy/action
+      proprio_state: mujoco/proprio_state
+      image/top: mujoco/image/top
+      image/left: mujoco/image/left
+      image/right: mujoco/image/right
+    outputs:
+      - action
+      - sim_command
+      - proprio_state
+      - image/top
+      - image/left
+      - image/right
+      - piper_left/action
+      - piper_right/action
+    args: --config robot_router.yaml
+
+  - id: mujoco
+    path: nodes/mujoco_main.py
+    inputs:
+      tick: dora/timer/millis/20
+      action: robot_router/action
+      sim_command: robot_router/sim_command
+    outputs:
+      - proprio_state
+      - sim_status
+      - image/top
+      - image/left
+      - image/right
+    args: --config simulator.yaml
+
+  # 人眼查看降亮（×0.75）：场景按训练分布还原后原始渲染偏亮，观看舒适性用；
+  # 与策略输入解耦（策略走 camera_style 补偿画面）。
+  - id: viewer_style
+    path: nodes/viewer_style.py
+    inputs:
+      image/top: robot_router/image/top
+      image/left: robot_router/image/left
+      image/right: robot_router/image/right
+    outputs:
+      - image/top
+      - image/left
+      - image/right
+
+  # 图像查看窗口（forge_runtime 预编译 Rust 二进制），目视验收用（经 viewer_style 降亮）
+  - id: image_viewer
+    path: ../../../../../forge_runtime/target/release/image_viewer
+    inputs:
+      image/top: viewer_style/image/top
+      image/left: viewer_style/image/left
+      image/right: viewer_style/image/right
+
+  # 验收取证节点（本地脚本）：周期记录 14 维关节数值 + 保存图像快照，
+  # 不改动主数据流，用于数值化/图像化验收证据（图像取补偿后画面=策略实际输入）
+  - id: frame_capture
+    path: nodes/frame_capture.py
+    inputs:
+      proprio_state: robot_router/proprio_state
+      image/top: camera_style/image/top
+      image/left: camera_style/image/left
+      image/right: camera_style/image/right

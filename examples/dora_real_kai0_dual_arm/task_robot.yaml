@@ -1,0 +1,99 @@
+# TaskRobot 配置（真机双臂 14D：左臂 + 右臂）
+# joints 与 kai0_rtc.yaml 一致（先左后右），gripper 单位取 Piper 驱动契约（毫米）——
+# kai0_policy 输出为 Forge 米，经 kai0_unit_bridge 换算为毫米后再进入本节点。
+# 复制自 forge_runtime/examples/real_playback/task_robot.yaml 的双臂化形态。
+
+joints:
+  - name: robot_left/joint1
+    mode: position
+    unit: radians
+  - name: robot_left/joint2
+    mode: position
+    unit: radians
+  - name: robot_left/joint3
+    mode: position
+    unit: radians
+  - name: robot_left/joint4
+    mode: position
+    unit: radians
+  - name: robot_left/joint5
+    mode: position
+    unit: radians
+  - name: robot_left/joint6
+    mode: position
+    unit: radians
+  # Piper 驱动（PIPER_ACTUATOR_ORDER）：夹爪固定毫米；两指总开口 0..105 mm。
+  - name: robot_left/gripper
+    mode: prismatic
+    unit: millimeters
+  - name: robot_right/joint1
+    mode: position
+    unit: radians
+  - name: robot_right/joint2
+    mode: position
+    unit: radians
+  - name: robot_right/joint3
+    mode: position
+    unit: radians
+  - name: robot_right/joint4
+    mode: position
+    unit: radians
+  - name: robot_right/joint5
+    mode: position
+    unit: radians
+  - name: robot_right/joint6
+    mode: position
+    unit: radians
+  - name: robot_right/gripper
+    mode: prismatic
+    unit: millimeters
+
+robots:
+  # id 与 dataflow 中 task_robot 输出/piper 节点输入对应：piper_left/action、piper_right/action
+  - id: piper_left
+    joints:
+      [
+        "robot_left/joint1",
+        "robot_left/joint2",
+        "robot_left/joint3",
+        "robot_left/joint4",
+        "robot_left/joint5",
+        "robot_left/joint6",
+        "robot_left/gripper",
+      ]
+    actuator_order: ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "gripper"]
+    joint_to_actuator:
+      robot_left/joint1: joint1
+      robot_left/joint2: joint2
+      robot_left/joint3: joint3
+      robot_left/joint4: joint4
+      robot_left/joint5: joint5
+      robot_left/joint6: joint6
+      robot_left/gripper: gripper
+  - id: piper_right
+    joints:
+      [
+        "robot_right/joint1",
+        "robot_right/joint2",
+        "robot_right/joint3",
+        "robot_right/joint4",
+        "robot_right/joint5",
+        "robot_right/joint6",
+        "robot_right/gripper",
+      ]
+    actuator_order: ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "gripper"]
+    joint_to_actuator:
+      robot_right/joint1: joint1
+      robot_right/joint2: joint2
+      robot_right/joint3: joint3
+      robot_right/joint4: joint4
+      robot_right/joint5: joint5
+      robot_right/joint6: joint6
+      robot_right/gripper: gripper
+
+# 真机相机转发：camera_* 输出 image → task_robot 透传为 image/top|left|right，
+# 供 kai0_policy（image_inputs）与 image_viewer 消费。
+image_forward:
+  image/top: image/top
+  image/left: image/left
+  image/right: image/right

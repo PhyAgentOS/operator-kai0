@@ -1,0 +1,68 @@
+# kai0（χ₀）策略节点配置（RTC 异步推理模式 WS 客户端）
+# **推荐默认路径**（与真机客户端口径一致：其发布配置默认 rtc_async=true）；
+# 同步模式 kai0.yaml 保留作调试与回退。
+# joints 顺序即 14 维全局动作契约：左 6 关节+左夹爪、右 6 关节+右夹爪，
+# 与 robot_router / kai0 服务端一致（常量见 inference/contract.py，禁止散落字面量）。
+# 单位契约：服务端夹爪为毫米（训练数据域），节点侧换算为米（见 contract.py）。
+#
+# 与 kai0.yaml（同步模式）的差异：policy.type=kai0_rtc + rtc_* 参数组。
+# RTC 语义：
+# - 常驻 WS 连接 + 后台推理线程按 rtc_inference_hz 周期请求；
+# - 请求携带 prev_action_chunk（本地动作流轨迹快照 / 无轨迹时 state 重复占位）
+#   + inference_delay（RTT 自适应，首请求用 rtc_initial_delay_steps）
+#   + execute_horizon（引导前缀长度），服务端 Pi0RTC 以之做引导去噪；
+# - 新动作块按已流逝控制步数裁剪（上限 rtc_latency_k）后与队列轨迹混合
+#   （关节线性淡化、夹爪取新值）。
+#
+# 服务端：须以 _rtc 配置启动（scripts/start_server.sh --rtc，权重与非 RTC 共用
+# 同一 checkpoint）；如 --delta/--lora 变体则同步加对应开关。
+#
+# smoke（仓库根目录，需真实服务端已启动；启动方式见 README「启动推理服务端」）：
+#   uv run kai0 infer-once --config config/inference/kai0_rtc.yaml
+# 无服务端链路调试（DummyAdapter，不连网）：--config config/inference/dummy.yaml
+# Dora（仿真示例，见 examples/dora_sim_kai0_dual_arm，默认 RTC）：
+#   bash scripts/start_sim.sh [秒数]
+
+joints:
+  - { name: robot_left/joint1, mode: position, unit: radians }
+  - { name: robot_left/joint2, mode: position, unit: radians }
+  - { name: robot_left/joint3, mode: position, unit: radians }
+  - { name: robot_left/joint4, mode: position, unit: radians }
+  - { name: robot_left/joint5, mode: position, unit: radians }
+  - { name: robot_left/joint6, mode: position, unit: radians }
+  # 左右 gripper 均表示两指总开口，范围为 0..0.105 m。
+  - { name: robot_left/gripper, mode: prismatic, unit: meters }
+  - { name: robot_right/joint1, mode: position, unit: radians }
+  - { name: robot_right/joint2, mode: position, unit: radians }
+  - { name: robot_right/joint3, mode: position, unit: radians }
+  - { name: robot_right/joint4, mode: position, unit: radians }
+  - { name: robot_right/joint5, mode: position, unit: radians }
+  - { name: robot_right/joint6, mode: position, unit: radians }
+  - { name: robot_right/gripper, mode: prismatic, unit: meters }
+
+state_joints: [robot_left/joint1, robot_left/joint2, robot_left/joint3, robot_left/joint4, robot_left/joint5, robot_left/joint6, robot_left/gripper, robot_right/joint1, robot_right/joint2, robot_right/joint3, robot_right/joint4, robot_right/joint5, robot_right/joint6, robot_right/gripper]
+
+policy:
+  type: kai0_rtc       # RTC 异步推理 WS 客户端（registry 注册实现）
+  policy_id: kai0
+  auto_start: false    # 真机由 gateway policy_command 驱动；仿真置 true（无 gateway 自主运行）
+  server_url: ws://127.0.0.1:8000   # kai0 推理服务端（真实 serve_policy --rtc；adapter 单测注入 fake transport，见 tests/）
+  instruction: ""      # fixed 模式 prompt（openpi prompt 契约）
+  timeout_s: 300.0    # 单请求超时（秒）；首个请求含服务端 RTC 路径 JIT 编译（实测耗时数分钟），需给足余量
+  # —— RTC 参数组（缺省键用代码默认） ——
+  rtc_control_rate: 50       # 控制回读频率（Hz），须与节点 tick 频率一致（仿真 dataflow tick 为 20ms=50Hz）
+  rtc_chunk_size: 50         # 动作块长度（服务端 action_horizon）
+  rtc_execute_horizon: 18    # RTC 引导前缀长度（≤ chunk_size；真机定型值）
+  rtc_latency_k: 8           # 新块裁剪已流逝步数的上限
+  rtc_min_smooth_steps: 8    # 新旧块重叠混合步数
+  rtc_inference_hz: 2.0      # 推理请求频率（Hz；真机定型值）
+  rtc_initial_delay_steps: 4 # 首请求 inference_delay（首次 RTT 样本到来前）
+  rtc_delay_window: 8        # RTT 中位数统计窗口（请求数）
+  rtc_startup_timeout_s: 300 # 首个动作块等待超时（覆盖服务端 RTC 路径 JIT 编译，实测首请求耗时数分钟）
+  rtc_stale_timeout_s: 1.0   # 推理结果过期判据（秒）
+
+# dora 图像输入 id → kai0 服务端 alias（契约 contract.CAMERA_ALIASES）
+image_inputs:
+  image/top: top_head
+  image/left: hand_left
+  image/right: hand_right

@@ -1,0 +1,116 @@
+# 双臂 14 维真机（源码模式）：
+# kai0_policy（kai0_runner RTC WS 客户端节点）→ kai0_unit_bridge（夹爪米↔毫米）
+#   → task_robot → piper_slave×2（真机双臂）+ usb_camera×3（顶视/左腕/右腕）+ image_viewer
+#
+# 服务端为真实 kai0 推理（本仓库 scripts/start_server.sh --rtc，与仿真部署同一脚本，
+# 由 start_real.sh 先做 /healthz 检查）。策略节点与仿真共用同一节点与协议，
+# 只更换环境侧（仿真 mujoco → 真机 piper/相机）。
+#
+# 单位链：kai0 契约夹爪 Forge 米（inference/contract.py，仿真 mujoco 同口径）；
+#   Piper 驱动固定毫米（PIPER_ACTUATOR_ORDER），task_robot 只透传不换算，
+#   故 kai0_policy 与 task_robot 之间由 kai0_unit_bridge 做双向换算（仅夹爪列）。
+#
+# 运行：bash scripts/start_real.sh
+# 注意：源码模式下 task_robot / usb_camera / image_viewer 直接指向 Forge 框架
+#   工作区（相对路径上溯 5 级，默认布局 <框架根>/policies/embodied/kai0_runner）；
+#   piper 节点为本仓库 vendor 驱动层（nodes/piper_follower.py，见 vendor/）；
+#   usb_camera 需先构建（cargo build --release --bins，见 devices/camera/usb_camera）；
+#   各节点以打包二进制运行后此说明作废。
+
+nodes:
+  # 顶视 / 左腕 / 右腕相机（usb_camera Rust 节点；device 按现场修改 camera_*.yaml）
+  - id: camera_top
+    path: ../../../../../devices/camera/usb_camera/target/release/usb_camera
+    inputs:
+      tick: dora/timer/millis/33
+    outputs:
+      - image
+    args: run --config camera_top.yaml
+
+  - id: camera_left
+    path: ../../../../../devices/camera/usb_camera/target/release/usb_camera
+    inputs:
+      tick: dora/timer/millis/33
+    outputs:
+      - image
+    args: run --config camera_left.yaml
+
+  - id: camera_right
+    path: ../../../../../devices/camera/usb_camera/target/release/usb_camera
+    inputs:
+      tick: dora/timer/millis/33
+    outputs:
+      - image
+    args: run --config camera_right.yaml
+
+  # 真机左右臂（vendor 驱动节点：vendored PiperDriver + robot_core 标准循环，
+  # 见 vendor/robots_piper/VENDOR.md；port 按现场修改 piper_slave_*.yaml）
+  - id: piper_slave_left
+    path: nodes/piper_follower.py
+    inputs:
+      action: task_robot/piper_left/action
+      tick: dora/timer/millis/50
+    outputs:
+      - state
+    args: --config piper_slave_left.yaml
+
+  - id: piper_slave_right
+    path: nodes/piper_follower.py
+    inputs:
+      action: task_robot/piper_right/action
+      tick: dora/timer/millis/50
+    outputs:
+      - state
+    args: --config piper_slave_right.yaml
+
+  # 任务机器人节点：聚合双臂状态、转发相机画面、按 actuator 拆分动作
+  - id: task_robot
+    path: ../../../../../forge_runtime/packages/nodes/task_robot/main.py
+    inputs:
+      tick: dora/timer/millis/50
+      action: kai0_unit_bridge/action
+      piper_left/state: piper_slave_left/state
+      piper_right/state: piper_slave_right/state
+      image/top: camera_top/image
+      image/left: camera_left/image
+      image/right: camera_right/image
+    outputs:
+      - piper_left/action
+      - piper_right/action
+      - proprio_state
+      - image/top
+      - image/left
+      - image/right
+    args: --config task_robot.yaml
+
+  # 单位桥：夹爪 Forge 米 ↔ Piper 毫米 双向换算（仅夹爪列，关节透传）
+  - id: kai0_unit_bridge
+    path: nodes/kai0_unit_bridge.py
+    inputs:
+      action: kai0_policy/action
+      proprio_state: task_robot/proprio_state
+    outputs:
+      - action
+      - proprio_state
+
+  # kai0 策略节点（RTC）：tick 驱动；推理线程请求观测时组帧，动作流缓冲持续供流
+  - id: kai0_policy
+    path: nodes/kai0_main.py
+    inputs:
+      tick: dora/timer/millis/50
+      proprio_state: kai0_unit_bridge/proprio_state
+      image/top: task_robot/image/top
+      image/left: task_robot/image/left
+      image/right: task_robot/image/right
+    outputs:
+      - action
+    args: >-
+      infer --config kai0_rtc.yaml
+
+  # 图像查看窗口（forge_runtime 预编译 Rust 二进制），目视验收用
+  - id: image_viewer
+    path: ../../../../../forge_runtime/target/release/image_viewer
+    inputs:
+      image/top: task_robot/image/top
+      image/left: task_robot/image/left
+      image/right: task_robot/image/right

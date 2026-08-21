@@ -1,0 +1,44 @@
+# kai0-libero 两节点真策略闭环（第 6 步冒烟）：
+# libero_benchmark（进程内 LIBERO env）↔ kai0_policy（kai0_runner WS 客户端，π0.5-libero）
+# 与参考实现 dataflow.example.yaml 同构（不新增任何通道）。
+#
+# 前置：kai0 服务端以 pi05_libero 启动（scripts/start_server.sh
+#   --ckpt <weights>/pi05_libero --policy-config pi05_libero）；
+# 运行（经 watchdog）：python3 examples/dora_bench_libero/bench_watchdog.py
+#   --dora-bin ~/miniconda3/envs/paos-skill-demo/bin --dataflow 本文件
+#   --result-dir <结果目录> --episode-timeout-s 300 --batch-timeout-s 1800
+
+nodes:
+  - id: libero_benchmark
+    path: /home/wujunqi/miniconda3/envs/libero-bench/bin/python
+    args: -u /home/wujunqi/kai0_benchmark_skill/libero_benchmark_node/packages/nodes/benchmarks/libero/main.py
+    env:
+      BENCHMARK_CONFIG: /home/wujunqi/kai0_benchmark_skill/bench_work/bench_kai0.yaml
+      PYTHONPATH: /home/wujunqi/kai0_benchmark_skill/LIBERO
+      MUJOCO_GL: egl
+      PYOPENGL_PLATFORM: egl
+    inputs:
+      action: kai0_policy/action
+    outputs:
+      - proprio_state
+      - image/main
+      - image/second
+      - policy_command
+      - benchmark_status
+      - benchmark_result
+
+  - id: kai0_policy
+    path: /home/wujunqi/framework/policies/embodied/kai0_runner/.venv/bin/kai0-infer
+    args: >-
+      infer --config /home/wujunqi/framework/policies/embodied/kai0_runner/config/inference/kai0_libero.yaml
+    inputs:
+      tick: dora/timer/millis/20
+      policy_command:
+        source: libero_benchmark/policy_command
+        # 必须显式加深：episode 边界会连发 set_instruction + reset_scene（手册陷阱 4）
+        queue_size: 32
+      proprio_state: libero_benchmark/proprio_state
+      image/main: libero_benchmark/image/main
+      image/second: libero_benchmark/image/second
+    outputs:
+      - action

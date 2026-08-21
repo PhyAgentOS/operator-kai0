@@ -1,0 +1,10 @@
+# USB 相机配置：顶视相机（usb_camera 节点）
+# device 为示例值（真机部署按现场修改），
+# 可用 `v4l2-ctl --list-devices` 确认设备路径。output_id 须与 dataflow 的 outputs 对齐。
+device: "/dev/v4l/by-path/pci-0000:00:0d.0-usb-0:2:1.4-video-index0"
+output_id: image
+image_format: jpeg
+image_jpeg_quality: 85
+width: 640
+height: 480
+fps: 30

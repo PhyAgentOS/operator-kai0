@@ -1,0 +1,58 @@
+# 双臂真机：kai0（χ₀）策略节点配置（RTC 异步推理模式，推荐默认路径）
+# 复制自仓库 config/inference/kai0_rtc.yaml，适配项：
+# - auto_start: true —— 真机示例 dataflow 无 gateway，节点启动即运行；
+#   生产接入 gateway（policy_command 驱动）时置 false（见 config/inference/README.md）
+# - rtc_control_rate: 20 —— 真机控制回读 20Hz（真机客户端定型值），
+#   须与本 dataflow 的 kai0_policy tick 频率一致（tick 为 50ms=20Hz）
+# - server_url: ws://127.0.0.1:8000 —— 真实 kai0 推理服务端（须以 _rtc 配置启动：
+#   scripts/start_server.sh --rtc；start_real.sh 启动前会先做 /healthz 检查）
+# 其余（joints 14 维契约、image_inputs 映射、单位契约、rtc_* 参数组）与仓库配置一致，
+# 契约常量见 inference/contract.py，禁止散落字面量。
+#
+# 运行（仓库根）：
+#   bash scripts/start_real.sh
+
+joints:
+  - { name: robot_left/joint1, mode: position, unit: radians }
+  - { name: robot_left/joint2, mode: position, unit: radians }
+  - { name: robot_left/joint3, mode: position, unit: radians }
+  - { name: robot_left/joint4, mode: position, unit: radians }
+  - { name: robot_left/joint5, mode: position, unit: radians }
+  - { name: robot_left/joint6, mode: position, unit: radians }
+  # 左右 gripper 均表示两指总开口，范围为 0..0.105 m（Forge 侧口径；服务端为毫米，节点内换算）。
+  - { name: robot_left/gripper, mode: prismatic, unit: meters }
+  - { name: robot_right/joint1, mode: position, unit: radians }
+  - { name: robot_right/joint2, mode: position, unit: radians }
+  - { name: robot_right/joint3, mode: position, unit: radians }
+  - { name: robot_right/joint4, mode: position, unit: radians }
+  - { name: robot_right/joint5, mode: position, unit: radians }
+  - { name: robot_right/joint6, mode: position, unit: radians }
+  - { name: robot_right/gripper, mode: prismatic, unit: meters }
+
+state_joints: [robot_left/joint1, robot_left/joint2, robot_left/joint3, robot_left/joint4, robot_left/joint5, robot_left/joint6, robot_left/gripper, robot_right/joint1, robot_right/joint2, robot_right/joint3, robot_right/joint4, robot_right/joint5, robot_right/joint6, robot_right/gripper]
+
+policy:
+  type: kai0_rtc       # RTC 异步推理 WS 客户端（registry 注册实现）
+  policy_id: kai0
+  auto_start: true     # 真机示例无 gateway：节点启动即运行；生产接 gateway 时置 false
+  server_url: ws://127.0.0.1:8000   # 真实 serve_policy --rtc（仿真/真机同一服务端脚本）
+  instruction: ""      # fixed 模式 prompt（openpi prompt 契约）
+  timeout_s: 300.0    # 单请求超时（秒）；首个请求含服务端 RTC 路径 JIT 编译（实测耗时数分钟），需给足余量
+  # —— RTC 参数组（真机定型值；缺省键用代码默认） ——
+  rtc_control_rate: 20       # 控制回读频率（Hz），须与节点 tick 频率一致（本 dataflow tick 为 50ms=20Hz）
+  rtc_chunk_size: 50         # 动作块长度（服务端 action_horizon）
+  rtc_execute_horizon: 18    # RTC 引导前缀长度（≤ chunk_size；真机定型值）
+  rtc_latency_k: 8           # 新块裁剪已流逝步数的上限
+  rtc_min_smooth_steps: 8    # 新旧块重叠混合步数
+  rtc_inference_hz: 2.0      # 推理请求频率（Hz；真机定型值）
+  rtc_initial_delay_steps: 4 # 首请求 inference_delay（首次 RTT 样本到来前）
+  rtc_delay_window: 8        # RTT 中位数统计窗口（请求数）
+  rtc_startup_timeout_s: 300 # 首个动作块等待超时（覆盖服务端 RTC 路径 JIT 编译，实测首请求耗时数分钟）
+  rtc_stale_timeout_s: 1.0   # 推理结果过期判据（秒）
+
+# dora 图像输入 id → kai0 服务端 alias（契约 contract.CAMERA_ALIASES）
+# 真机相机布局与仿真一致：顶视 → top_head、左腕 → hand_left、右腕 → hand_right
+image_inputs:
+  image/top: top_head
+  image/left: hand_left
+  image/right: hand_right
