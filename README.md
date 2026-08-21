@@ -127,6 +127,7 @@ bash scripts/start_real.sh
 | --- | --- | --- |
 | `config/inference/kai0_rtc.yaml` | `kai0_rtc` | 采用 RTC 模式（默认） |
 | `config/inference/kai0.yaml` | `kai0` | 不采用 RTC 模式（调试/回退） |
+| `config/inference/kai0_libero.yaml` | `kai0_libero` | LIBERO 基准（同步模式 + LIBERO 契约，见 `examples/dora_bench_libero/`） |
 | `config/inference/dummy.yaml` | `dummy` | 无服务端调试（不连网） |
 
 字段说明见 `config/inference/README.md`；关节顺序、单位换算等契约见 `inference/contract.py`。
@@ -136,20 +137,24 @@ bash scripts/start_real.sh
 ```text
 .
 ├── cli.py                 # 统一 CLI 入口
+├── real_deploy.md         # 真机部署操作手册（环境安装 → 现场硬件确认 → 验收 → 启动）
 ├── common/                # 共用路径逻辑
 ├── inference/             # 客户端：Dora 与单次推理实现
-│   ├── contract.py        # 关节顺序、单位换算、相机别名契约（集中定义）
+│   ├── contract.py        # 关节顺序、单位换算、相机别名契约（双臂 / LIBERO 两套 profile）
+│   ├── config.py          # 配置加载与契约校验
 │   ├── transport/         # 与服务端通信的 WebSocket 传输层（短连接 / 常驻连接 + msgpack codec）
-│   ├── policies/          # kai0（同步）、kai0/rtc_adapter（RTC）、dummy 策略适配器
+│   ├── policies/          # kai0（同步）、kai0_rtc（RTC）、kai0_libero（LIBERO）、dummy 策略适配器
 │   ├── main.py            # Dora 节点主体
 │   └── run_once.py        # infer-once 单次推理
 ├── config/                # 推理配置模板（见 config/inference/README.md）
-├── examples/              # 双臂 Dora 示例（见 examples/README.md）
+├── examples/              # Dora 示例（见 examples/README.md）
 │   ├── dora_sim_kai0_dual_arm/   # 仿真示例：本地 MJCF 场景 + 策略节点
-│   └── dora_real_kai0_dual_arm/  # 真机示例：Piper 双臂 + USB 相机 + 单位桥
+│   ├── dora_real_kai0_dual_arm/  # 真机示例：Piper 双臂 + USB 相机 + 单位桥
+│   └── dora_bench_libero/        # LIBERO 基准示例：benchmark 节点 + kai0_libero 策略节点
 ├── scripts/               # 启动脚本：start_server.sh（服务端）/ start_sim.sh（仿真）/ start_real.sh（真机）
-├── server/                # 推理服务端：kai0_prompt_schedule/（代码快照，见 server/SOURCE.md）
-│   └── setup.sh           #   服务端环境一键安装
+├── server/                # 推理服务端：kai0_prompt_schedule/（代码快照）+ SOURCE.md（来源与同步说明）
+│   └── setup.sh           # 服务端环境一键安装
 ├── ckpt/                  # checkpoint 权重放置约定（权重不随仓库分发，见 ckpt/README.md）
+├── test/                  # 测试配套：fake_policy_server（协议级假服务端，见 test/fake_policy_server/README.md）
 └── tests/                 # 单元测试
 ```
