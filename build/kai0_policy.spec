@@ -12,8 +12,9 @@ import os
 
 from PyInstaller.utils.hooks import collect_dynamic_libs
 
-# 相对 spec 所在目录（build/）解析仓库根；datas 源路径不依赖构建 cwd
-SPEC_DIR = os.path.dirname(os.path.abspath(SPECPATH))
+# SPECPATH 是 spec 所在目录（PyInstaller build_main.py: CONF['specpath']），
+# 不是文件路径——别再对它 dirname（那会多向上一层）。
+SPEC_DIR = os.path.abspath(SPECPATH)
 ROOT = os.path.abspath(os.path.join(SPEC_DIR, ".."))
 
 binaries = []

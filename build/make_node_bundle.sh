@@ -13,7 +13,7 @@
 # 不可用时退出码 2 并给出提示，绝不静默产出残缺 bundle。
 set -euo pipefail
 
-VERSION="0.1.0"
+VERSION="0.2.0"
 ENTRYPOINT="kai0_policy"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD="$REPO_ROOT/build_binaries"
