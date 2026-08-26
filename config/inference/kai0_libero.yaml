@@ -24,6 +24,10 @@ joints:
 
 state_joints: [joint1, joint2, joint3, joint4, joint5, joint6, joint7, gripper]
 
+# 过渡开关：dora_plain = 纯数据面（既有行为）；session_endpoint = 工具面
+# （policy.runner/serve 会话：openpi 服务 attach-or-launch + 就绪门 + stop）与数据面同节点。
+mode: session_endpoint
+
 policy:
   type: kai0_libero   # 同步模式 WS 客户端 + LIBERO 契约（registry）
   policy_id: kai0_libero
@@ -32,6 +36,17 @@ policy:
   instruction: ""     # 占位；逐 episode 由 set_instruction 覆盖
   timeout_s: 60.0     # 单请求超时（秒）
   execute_action_steps: 5   # 官方 openpi 口径：chunk 前 5 步执行后重规划（eval_protocol §3 D-2）
+
+# session 工具段（mode=session_endpoint 必需）：
+# - weights_dir 相对路径按 launch cwd（skill 工作区，权重随 bundle 解包于此）解析；
+#   start 参数可覆盖（server_url / weights_dir）；
+# - 就绪门三段：/healthz 200（readiness_timeout_s，默认 600s）→ kai0 infer-once
+#   成功且 action_dim==7 → norm_stats sha256 匹配锚点；失败 owned 则 teardown 进程组。
+session:
+  server_url: ws://127.0.0.1:8000
+  weights_dir: weights/pi05_libero
+  readiness_timeout_s: 600
+  norm_stats_sha256: b3a44bb2810436fb62917decaea58bd4d9110255df527dea21e8fd40c960bd84
 
 # dora 图像输入 id → 契约 alias（contract.LIBERO.camera_aliases；与 benchmark 输出通道对齐）
 image_inputs:

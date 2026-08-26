@@ -13,15 +13,21 @@ dependencies = [
     "websockets>=13.0",
     "msgpack>=1.0.5",
 
-    "forge-msgs==1.0.0",
+    # forge-msgs 1.1.0（rev 与 forge-tool-v0.2.0 同 commit）：1.0.x 无 ToolMessage
+    # （forge_tool.dora 的 Dora 载波需要），session endpoint 工具面依赖
+    "forge-msgs==1.1.0",
     "forge-common==1.0.0",
     "forge-policy==1.0.0",
+    # 包内 version=0.1.0；git 来源 rev=forge-tool-v0.2.0（发布家族标签）见 [tool.uv.sources]
+    "forge-tool==0.1.0",
     "dora-rs==0.4.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+    # session endpoint 单测（async SPI）需要；asyncio_mode=auto 见 [tool.pytest.ini_options]
+    "pytest-asyncio>=0.24",
 ]
 
 [project.scripts]
@@ -32,9 +38,17 @@ kai0-infer-once = "kai0_inference.cli:main_infer_once"
 kai0-infer = "kai0_inference.cli:main_infer"
 
 [tool.uv.sources]
-forge-msgs = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-msgs-v1.0.0", subdirectory = "packages/msgs" }
-forge-common = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-common-v1.0.0", subdirectory = "packages/common" }
-forge-policy = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-policy-v1.0.0", subdirectory = "packages/policy" }
+# 四个 forge 包统一锁定同一 commit（forge-tool-v0.2.0 标签指向的 270b187），
+# 原因有二：
+# 1) forge-msgs 1.0.x 无 ToolMessage（forge_tool.dora 的 Dora 载波需要），
+#    而 1.1.0 尚无独立标签 → 必须 git rev；
+# 2) forge 仓库是 uv workspace，成员包（policy/common/tool）的 msgs 依赖会被 uv
+#    推导为"同源 workspace URL"——若 common/policy 用各自标签，会与 rev 冲突。
+#    同 rev 单一树：msgs 1.1.0 / common 1.0.0 / policy 1.0.0 / tool 0.1.0。
+forge-msgs = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", rev = "270b18726ed7ed3d8834dc51df41901ca22a4f7e", subdirectory = "packages/msgs" }
+forge-common = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", rev = "270b18726ed7ed3d8834dc51df41901ca22a4f7e", subdirectory = "packages/common" }
+forge-policy = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", rev = "270b18726ed7ed3d8834dc51df41901ca22a4f7e", subdirectory = "packages/policy" }
+forge-tool = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", rev = "forge-tool-v0.2.0", subdirectory = "packages/tool" }
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -51,6 +65,7 @@ only-packages = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.uv]
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]

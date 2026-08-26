@@ -20,3 +20,15 @@ ckpt/*
 
 # 服务端运行缓存（tokenizer 等；OPENPI_DATA_HOME 默认位置）
 cache/
+
+# 会话工作区（session_endpoint 默认按 launch cwd 创建：日志/缓存；生产在 skill 工作区）
+session_workspace/
+
+# node bundle 源码脚本例外（build/ 整体忽略；这三件需入库）
+!build/
+!build/kai0_policy.spec
+!build/kai0_policy_entry.py
+!build/make_node_bundle.sh
+
+# 单文件 bundle 构建产物（tar.gz / staging / PyInstaller work）
+build_binaries/

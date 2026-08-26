@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 
 import numpy as np
@@ -56,6 +57,76 @@ def _build_joint_command(action_np, config) -> JointCommand:
     return JointCommand(name=names, position=position, velocity=velocity, effort=effort)
 
 
+def _resolve_inference_config_path(args) -> str | None:
+    """session_endpoint 就绪门需要的文件型配置路径（与 load_config 同源，加 bundle 回退）。"""
+    import sys
+    from pathlib import Path
+
+    path = getattr(args, "config", None)
+    if path:
+        return str(path)
+    env_path = os.environ.get("KAI0_INFERENCE_CONFIG")
+    if env_path:
+        return env_path
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        bundled = Path(meipass) / "config" / "inference" / "kai0_libero.yaml"
+        if bundled.is_file():
+            return str(bundled)
+    return None
+
+
+def run_session_endpoint_node(args, config) -> int:
+    """session_endpoint 模式：工具面（policy.runner/serve 会话）+ 数据面同节点运行。"""
+    from dora import Node
+
+    from kai0_inference.inference.session_endpoint import Kai0ServeSessionEndpoint
+    from kai0_inference.inference.session_runner import Kai0SessionPolicyRunner
+
+    session = config.session
+    assert session is not None  # from_dict 已校验 mode/session 一致性
+    inference_config_path = _resolve_inference_config_path(args)
+    if inference_config_path is None:
+        raise ValueError(
+            "session_endpoint 模式需要文件型推理配置（--config / KAI0_INFERENCE_CONFIG），"
+            "供就绪门 kai0 infer-once 冒烟使用"
+        )
+    policy_config = config.runtime_policy_config()
+    policy = create_policy_adapter(policy_config)
+    image_inputs = config.image_inputs_for(policy.required_image_keys)
+    endpoint = Kai0ServeSessionEndpoint(
+        server_url=session.server_url,
+        weights_dir=session.weights_dir,
+        norm_stats_sha256=session.norm_stats_sha256,
+        readiness_timeout_s=session.readiness_timeout_s,
+        policy_config=session.policy_config,
+        start_script=session.start_script,
+        inference_config_path=inference_config_path,
+        server_venv=session.server_venv,
+        workspace_dir=session.workspace_dir,
+        stop_grace_s=session.stop_grace_s,
+    )
+    node = Node()
+    runner = Kai0SessionPolicyRunner(
+        node,
+        policy=policy,
+        endpoint=endpoint,
+        joint_order=config.state_joint_order,
+        image_input_id_to_alias=image_inputs,
+        build_action=lambda action_np: _build_joint_command(action_np, config),
+        policy_id=str(policy_config.get("policy_id", "default")),
+        alias_for_cameras=list(image_inputs.values()),
+        auto_start=bool(policy_config.get("auto_start", False)),
+        call_lifecycle_hooks=True,
+    )
+    try:
+        return runner.run(node)
+    finally:
+        stop = getattr(policy, "stop", None)
+        if callable(stop):
+            stop()
+
+
 def run_infer(args) -> int:
     """执行 Dora 在线推理；args 需含可选 config。"""
     # Dora 节点以独立进程运行；不配置 logging 时 INFO 日志会被 root logger
@@ -66,6 +137,8 @@ def run_infer(args) -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     config = load_config(config_path=getattr(args, "config", None))
+    if config.mode == "session_endpoint":
+        return run_session_endpoint_node(args, config)
     policy_config = config.runtime_policy_config()
     policy = create_policy_adapter(policy_config)
     image_inputs = config.image_inputs_for(policy.required_image_keys)

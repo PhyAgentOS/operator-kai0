@@ -35,6 +35,29 @@ class JointConfig:
     type: str = "actuator"
 
 
+@dataclass(frozen=True)
+class SessionConfig:
+    """session_endpoint 模式的会话段（kai0 推理服务 attach-or-launch 生命周期）。
+
+    - server_url / weights_dir / norm_stats_sha256：就绪门必需；
+    - weights_dir 相对路径按 launch cwd（skill 工作区）解析；start 参数可覆盖；
+    - 其余键为可选运行期细节（start 脚本/服务端 venv/工作区），仓库内无绝对路径。
+    """
+
+    server_url: str
+    weights_dir: str
+    norm_stats_sha256: str
+    readiness_timeout_s: float = 600.0
+    policy_config: str = "pi05_libero"
+    start_script: str | None = None
+    server_venv: str | None = None
+    workspace_dir: str | None = None
+    stop_grace_s: float = 30.0
+
+
+_SESSION_KEYS = frozenset(SessionConfig.__dataclass_fields__)
+
+
 @dataclass
 class PolicyNodeConfig:
     """Policy 节点完整配置：joints、policy、image_inputs（input_id -> alias）。"""
@@ -45,6 +68,8 @@ class PolicyNodeConfig:
     image_input_id_to_alias: dict[str, str] = field(default_factory=dict)
     state_joints: list[str] = field(default_factory=list)
     contract: contract.PolicyContract = contract.DUAL_ARM
+    mode: str = "dora_plain"  # dora_plain | session_endpoint（过渡开关）
+    session: SessionConfig | None = None
 
     @property
     def joint_order(self) -> list[str]:
@@ -143,6 +168,13 @@ class PolicyNodeConfig:
                 f"camera_aliases 一致：{set(profile.camera_aliases)}"
             )
 
+        mode = str(data.get("mode", "dora_plain")).strip()
+        if mode not in ("dora_plain", "session_endpoint"):
+            raise ValueError(f"mode 必须为 dora_plain 或 session_endpoint：{mode!r}")
+        session = _parse_session(data.get("session"))
+        if mode == "session_endpoint" and session is None:
+            raise ValueError("mode=session_endpoint 需要 session 段（server_url/weights_dir 等）")
+
         return cls(
             joints=joints,
             policy=policy,
@@ -150,6 +182,8 @@ class PolicyNodeConfig:
             auto_start=_as_bool(policy.get("auto_start", data.get("auto_start", False))),
             image_input_id_to_alias=image_input_id_to_alias,
             contract=profile,
+            mode=mode,
+            session=session,
         )
 
     @classmethod
@@ -161,6 +195,48 @@ class PolicyNodeConfig:
         if not data:
             raise ValueError(f"配置文件为空: {p}")
         return cls.from_dict(data)
+
+
+def _parse_session(raw: Any) -> SessionConfig | None:
+    """解析可选 session 段；未知键/缺键 fail fast（防静默掉口径）。"""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ValueError("session 必须为 dict")
+    unknown = sorted(set(raw) - _SESSION_KEYS)
+    if unknown:
+        raise ValueError(f"session 存在未知键: {unknown}（可用: {sorted(_SESSION_KEYS)}）")
+    missing = [
+        name
+        for name in ("server_url", "weights_dir", "norm_stats_sha256")
+        if not str(raw.get(name, "")).strip()
+    ]
+    if missing:
+        raise ValueError(f"session 缺少必需键: {missing}")
+    timeout = float(raw.get("readiness_timeout_s", 600.0))
+    if timeout <= 0:
+        raise ValueError("session.readiness_timeout_s 必须为正数")
+    grace = float(raw.get("stop_grace_s", 30.0))
+    if grace <= 0:
+        raise ValueError("session.stop_grace_s 必须为正数")
+    return SessionConfig(
+        server_url=str(raw["server_url"]).strip(),
+        weights_dir=str(raw["weights_dir"]).strip(),
+        norm_stats_sha256=str(raw["norm_stats_sha256"]).strip(),
+        readiness_timeout_s=timeout,
+        policy_config=str(raw.get("policy_config", "pi05_libero")).strip(),
+        start_script=_optional_str(raw.get("start_script")),
+        server_venv=_optional_str(raw.get("server_venv")),
+        workspace_dir=_optional_str(raw.get("workspace_dir")),
+        stop_grace_s=grace,
+    )
+
+
+def _optional_str(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _select_contract(explicit: Any, policy_type: str) -> contract.PolicyContract:
