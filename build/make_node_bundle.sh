@@ -6,14 +6,14 @@
 #   → 服务端代码 / start_server.sh / 推理配置必须内嵌进 PyInstaller 单文件
 #     （见 build/kai0_policy.spec 的 datas），tar 包本身不允许放任何伴生文件。
 #
-# 产出：build_binaries/bundles/kai0_policy-0.1.0-linux-x86_64.tar.gz
+# 产出：build_binaries/bundles/kai0_policy-1.0.2-linux-x86_64.tar.gz
 # 并打印二进制与归档 sha256（归档值即 skill lock.sha256；二进制值供 receipt 核对）。
 #
 # 环境门：需要 pyinstaller（含 PyInstaller 可用的 Python 环境）——
 # 不可用时退出码 2 并给出提示，绝不静默产出残缺 bundle。
 set -euo pipefail
 
-VERSION="0.2.0"
+VERSION="1.0.2"
 ENTRYPOINT="kai0_policy"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD="$REPO_ROOT/build_binaries"

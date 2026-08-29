@@ -552,6 +552,22 @@ def test_config_bundled_yaml_session_section():
     assert config.session.readiness_timeout_s == 600.0
 
 
+def test_norm_stats_path_matches_ocdbt_two_level_layout(tmp_path):
+    """norm_stats 锚点须匹配 start.sh 的 GCS ocdbt 落盘布局（assets/<org>/<repo>/）。"""
+    nested = tmp_path / "assets" / "physical-intelligence" / "libero" / "norm_stats.json"
+    nested.parent.mkdir(parents=True)
+    nested.write_text('{"state": {}}', encoding="utf-8")
+    assert se._norm_stats_path(tmp_path) == nested
+
+
+def test_norm_stats_path_flat_layout_and_missing(tmp_path):
+    flat = tmp_path / "assets" / "libero" / "norm_stats.json"
+    flat.parent.mkdir(parents=True)
+    flat.write_text("{}", encoding="utf-8")
+    assert se._norm_stats_path(tmp_path) == flat
+    assert se._norm_stats_path(tmp_path / "no-assets") is None
+
+
 # —— 工具面集成：真实 handler + binding 线路径 ——
 
 

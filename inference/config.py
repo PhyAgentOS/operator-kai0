@@ -41,7 +41,11 @@ class SessionConfig:
 
     - server_url / weights_dir / norm_stats_sha256：就绪门必需；
     - weights_dir 相对路径按 launch cwd（skill 工作区）解析；start 参数可覆盖；
-    - 其余键为可选运行期细节（start 脚本/服务端 venv/工作区），仓库内无绝对路径。
+      省略时按 PAOS 环境推导默认路径（见 _default_weights_dir）；
+    - server_venv 为部署形态必需（PyInstaller 单文件内无 .venv）：显式配置优先，
+      省略时按 PAOS 环境推导默认路径（见 _default_server_venv），无 PAOS 环境
+      且未显式配置时为 None（独立部署须显式提供）；
+    - 其余键为可选运行期细节（start 脚本/工作区），仓库内无绝对路径。
     """
 
     server_url: str
@@ -208,11 +212,17 @@ def _parse_session(raw: Any) -> SessionConfig | None:
         raise ValueError(f"session 存在未知键: {unknown}（可用: {sorted(_SESSION_KEYS)}）")
     missing = [
         name
-        for name in ("server_url", "weights_dir", "norm_stats_sha256")
+        for name in ("server_url", "norm_stats_sha256")
         if not str(raw.get(name, "")).strip()
     ]
     if missing:
         raise ValueError(f"session 缺少必需键: {missing}")
+    weights_dir = str(raw.get("weights_dir", "")).strip() or _default_weights_dir()
+    if not weights_dir:
+        raise ValueError(
+            "session 缺少 weights_dir：既无显式配置，也无法从 PAOS 环境"
+            "（PAOS_SKILL_NAME / PAOS_SKILL_VERSION）推导默认权重路径"
+        )
     timeout = float(raw.get("readiness_timeout_s", 600.0))
     if timeout <= 0:
         raise ValueError("session.readiness_timeout_s 必须为正数")
@@ -221,14 +231,47 @@ def _parse_session(raw: Any) -> SessionConfig | None:
         raise ValueError("session.stop_grace_s 必须为正数")
     return SessionConfig(
         server_url=str(raw["server_url"]).strip(),
-        weights_dir=str(raw["weights_dir"]).strip(),
+        weights_dir=weights_dir,
         norm_stats_sha256=str(raw["norm_stats_sha256"]).strip(),
         readiness_timeout_s=timeout,
         policy_config=str(raw.get("policy_config", "pi05_libero")).strip(),
         start_script=_optional_str(raw.get("start_script")),
-        server_venv=_optional_str(raw.get("server_venv")),
+        server_venv=_optional_str(raw.get("server_venv")) or _default_server_venv(),
         workspace_dir=_optional_str(raw.get("workspace_dir")),
         stop_grace_s=grace,
+    )
+
+
+def _default_weights_dir() -> str:
+    """PAOS 环境下的确定性权重落盘路径。
+
+    skill 的 start.sh 将大权重下载到 `~/.PhyAgentOS/cache/weights/<skill>/<version>/`
+    （见 skill bundle 的 start.sh 与 SKILL.md 下载时长说明）；PhyAgentOS 流启动时
+    注入 PAOS_SKILL_NAME / PAOS_SKILL_VERSION，节点据此推导同一点，配置无需硬编码。
+    独立部署（无 PAOS 环境）时返回空串，由调用方报缺键错误。
+    """
+    name = os.environ.get("PAOS_SKILL_NAME", "").strip()
+    version = os.environ.get("PAOS_SKILL_VERSION", "").strip()
+    if not name or not version:
+        return ""
+    return str(Path.home() / ".PhyAgentOS" / "cache" / "weights" / name / version)
+
+
+def _default_server_venv() -> str | None:
+    """PAOS 环境下的服务端 venv 默认路径。
+
+    PyInstaller 单文件内无 .venv，部署形态必须指向外部环境；约定由节点仓库的
+    安装步骤（server/setup.sh，支持 SERVER_VENV 覆盖）安装到
+    `~/.PhyAgentOS/cache/server/kai0_prompt_schedule/.venv`，节点在 PAOS 环境
+    （PAOS_SKILL_NAME / PAOS_SKILL_VERSION 注入）下推导同一点，配置无需硬编码
+    机器路径。无 PAOS 环境时返回 None（独立部署须显式配置 server_venv）。
+    """
+    name = os.environ.get("PAOS_SKILL_NAME", "").strip()
+    version = os.environ.get("PAOS_SKILL_VERSION", "").strip()
+    if not name or not version:
+        return None
+    return str(
+        Path.home() / ".PhyAgentOS" / "cache" / "server" / "kai0_prompt_schedule" / ".venv"
     )
 
 

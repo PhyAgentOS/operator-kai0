@@ -74,7 +74,8 @@ DESCRIPTOR = ToolEndpointDescriptor(
 )
 
 # 就绪门第 3 段锚点：pi05_libero 官方 norm_stats.json（LIBERO 布局
-# <weights>/assets/<repo_id>/norm_stats.json）的 sha256。
+# <weights>/assets/<org>/<repo>/norm_stats.json，匹配见 _norm_stats_path
+# 的递归 glob）的 sha256。
 DEFAULT_NORM_STATS_SHA256 = (
     "b3a44bb2810436fb62917decaea58bd4d9110255df527dea21e8fd40c960bd84"
 )
@@ -643,11 +644,15 @@ def _parse_start_arguments(arguments: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _norm_stats_path(weights_dir: Path) -> Path | None:
-    """LIBERO 布局 <weights>/assets/<repo_id>/norm_stats.json 的首个匹配。"""
+    """LIBERO 布局 <weights>/assets/<org>/<repo>/norm_stats.json 的首个匹配。
+
+    start.sh 按 GCS ocdbt 原目录布局落盘（assets/physical-intelligence/libero/...），
+    深度不固定，须递归查找；排序后取首个，保证同一权重目录下结果确定。
+    """
     assets = weights_dir / "assets"
     if not assets.is_dir():
         return None
-    matches = sorted(assets.glob("*/norm_stats.json"))
+    matches = sorted(assets.glob("**/norm_stats.json"))
     return matches[0] if matches else None
 
 

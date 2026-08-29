@@ -22,8 +22,12 @@ from forge_policy import (
     apply_policy_command,
     build_policy_observation,
 )
-from forge_tool import ToolEndpointHandler, ToolEnvelope, tool_envelope_to_message, tool_message_to_envelope
-from forge_tool.dora import DoraToolEndpointBinding
+from forge_tool import ToolEndpointHandler, ToolEnvelope
+from forge_tool.dora import (
+    DoraToolEndpointBinding,
+    tool_envelope_to_message,
+    tool_message_to_envelope,
+)
 
 from kai0_inference.inference.endpoint_lease import EndpointLease
 from kai0_inference.inference.session_endpoint import DESCRIPTOR, OPERATION, Kai0ServeSessionEndpoint

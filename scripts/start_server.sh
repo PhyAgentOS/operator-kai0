@@ -102,7 +102,7 @@ fi
 
 POLICY_DIR="$(cd "${POLICY_DIR}" && pwd)"
 # LIBERO 官方 checkpoint 布局（pi05_libero 等）：<dir>/params/ +
-# <dir>/assets/<repo_id>/norm_stats.json（create_trained_policy 原生支持，
+# <dir>/assets/<org>/<repo>/norm_stats.json（create_trained_policy 原生支持，
 # asset_id 由配置的 DataConfig 解析）。双臂本地约定（<step>/params/ +
 # 父目录 norm_stats.json）继续走下方原校验。
 LIBERO_LAYOUT=0
@@ -110,10 +110,10 @@ if [[ "${POLICY_CONFIG}" == *libero* ]]; then
   LIBERO_LAYOUT=1
   if ! find "${POLICY_DIR}/assets" -name "norm_stats.json" -print -quit 2>/dev/null | grep -q .; then
     echo "[ERROR] LIBERO checkpoint 缺少归一化统计：" >&2
-    echo "[ERROR] 期望存在: ${POLICY_DIR}/assets/<repo_id>/norm_stats.json" >&2
+    echo "[ERROR] 期望存在: ${POLICY_DIR}/assets/<org>/<repo>/norm_stats.json" >&2
     exit 1
   fi
-  echo "[INFO] LIBERO checkpoint 布局校验通过（assets/<repo_id>/norm_stats.json）"
+  echo "[INFO] LIBERO checkpoint 布局校验通过（assets/<org>/<repo>/norm_stats.json）"
 elif [[ ! -f "$(dirname "${POLICY_DIR}")/norm_stats.json" ]]; then
   echo "[ERROR] 缺少归一化统计: $(dirname "${POLICY_DIR}")/norm_stats.json" >&2
   exit 1

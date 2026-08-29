@@ -107,3 +107,69 @@ def test_image_inputs_for_filtering():
     assert config.image_inputs_for(None) == contract.DEFAULT_IMAGE_INPUT_ID_TO_ALIAS
     filtered = config.image_inputs_for({"observation.images.top_head"})
     assert filtered == {"image/top": "top_head"}
+
+
+# ---- session 段：weights_dir 显式 / PAOS 默认推导 ----
+
+
+def _session_dict(weights_dir: str | None = None) -> dict:
+    data = _valid_dict()
+    data["mode"] = "session_endpoint"
+    session: dict = {"server_url": "ws://127.0.0.1:8000", "norm_stats_sha256": "ab" * 32}
+    if weights_dir is not None:
+        session["weights_dir"] = weights_dir
+    data["session"] = session
+    return data
+
+
+def test_session_weights_dir_explicit_wins():
+    config = PolicyNodeConfig.from_dict(_session_dict(weights_dir="weights/pi05_libero"))
+    assert config.session.weights_dir == "weights/pi05_libero"
+
+
+def test_session_weights_dir_defaults_from_paos_env(monkeypatch):
+    monkeypatch.setenv("PAOS_SKILL_NAME", "kai0-libero")
+    monkeypatch.setenv("PAOS_SKILL_VERSION", "1.0.0")
+    config = PolicyNodeConfig.from_dict(_session_dict(weights_dir=None))
+    expected = str(Path.home() / ".PhyAgentOS" / "cache" / "weights" / "kai0-libero" / "1.0.0")
+    assert config.session.weights_dir == expected
+
+
+def test_session_weights_dir_missing_without_paos_env_rejected(monkeypatch):
+    monkeypatch.delenv("PAOS_SKILL_NAME", raising=False)
+    monkeypatch.delenv("PAOS_SKILL_VERSION", raising=False)
+    with pytest.raises(ValueError, match="weights_dir"):
+        PolicyNodeConfig.from_dict(_session_dict(weights_dir=None))
+
+
+def test_session_server_venv_explicit_wins(monkeypatch):
+    monkeypatch.setenv("PAOS_SKILL_NAME", "kai0-libero")
+    monkeypatch.setenv("PAOS_SKILL_VERSION", "1.0.0")
+    data = _session_dict()
+    data["session"]["server_venv"] = "/opt/custom/venv"
+    config = PolicyNodeConfig.from_dict(data)
+    assert config.session.server_venv == "/opt/custom/venv"
+
+
+def test_session_server_venv_defaults_from_paos_env(monkeypatch):
+    monkeypatch.setenv("PAOS_SKILL_NAME", "kai0-libero")
+    monkeypatch.setenv("PAOS_SKILL_VERSION", "1.0.0")
+    config = PolicyNodeConfig.from_dict(_session_dict())
+    expected = str(
+        Path.home()
+        / ".PhyAgentOS"
+        / "cache"
+        / "server"
+        / "kai0_prompt_schedule"
+        / ".venv"
+    )
+    assert config.session.server_venv == expected
+
+
+def test_session_server_venv_none_without_paos_env(monkeypatch):
+    monkeypatch.delenv("PAOS_SKILL_NAME", raising=False)
+    monkeypatch.delenv("PAOS_SKILL_VERSION", raising=False)
+    data = _session_dict()
+    data["session"]["weights_dir"] = "weights/pi05_libero"
+    config = PolicyNodeConfig.from_dict(data)
+    assert config.session.server_venv is None
