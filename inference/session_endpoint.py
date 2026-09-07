@@ -11,6 +11,11 @@
   retryable=True)；重复 execution key 幂等返回当前状态，不重启。
 - `stop()` owned 时 SIGTERM 进程组（30s 宽限）→ SIGKILL（GPU 释放 = 进程组消亡）；
   attached 不杀进程。终态 stopped + ToolResult(status="stopped")。
+- 就绪门可被 cancel_active_gate() 取消（幂等；由事件线程在节点退出前调用）：
+  healthz 轮询在下一个 poll 间隔内抛 cancelled 失败并 teardown owned 进程，
+  shutdown 不必等满 readiness_timeout（配合 session_runner 的工具 worker 线程）。
+  取消是粘滞的：事件线程入队下一请求前须 reset_active_gate() 清除，否则
+  下一个 launch 门会立即中止（防止取消标志被门入口重置竞态覆盖）。
 
 运行期路径解析：权重/工作区相对路径按 launch cwd（skill 工作区）解析；
 start 脚本优先取 _MEIPASS（PyInstaller 单文件内嵌副本），回退仓库根/launch cwd。
@@ -250,6 +255,9 @@ class Kai0ServeSessionEndpoint:
         self._executions: dict[ToolExecutionKey, _Execution] = {}
         self._active: ToolExecutionKey | None = None
         self._accepting = True
+        # 就绪门取消标志：由事件线程（cancel_active_gate）在节点退出前置位；
+        # 门的 healthz 轮询在下一个 poll 间隔内检查并中止。
+        self._gate_cancelled = False
 
     # —— SessionToolEndpoint SPI ——
 
@@ -393,6 +401,7 @@ class Kai0ServeSessionEndpoint:
     async def shutdown(self) -> ShutdownOutcome:
         """节点退出兜底：停止准入；owned 进程随之消亡，避免 GPU 泄漏。"""
         self._accepting = False
+        self._gate_cancelled = True
         active = self._executions.get(self._active) if self._active is not None else None
         if active is None or active.result is not None:
             return ShutdownOutcome(self._active, False)
@@ -403,6 +412,25 @@ class Kai0ServeSessionEndpoint:
         return ShutdownOutcome(active.key, terminated)
 
     # —— 就绪门 ——
+
+    def cancel_active_gate(self) -> None:
+        """请求取消进行中的就绪门（幂等；由事件线程在节点退出前调用）。
+
+        就绪门在工具 worker 线程上执行；置位后门的 healthz 轮询在下一个
+        poll 间隔内抛 cancelled 失败并 teardown owned 进程（若已 launch），
+        shutdown 无需等满 readiness_timeout。取消是粘滞的：除非先
+        reset_active_gate()，否则后续 launch 门都会立即中止——重置必须由
+        事件线程在入队下一请求前完成，避免与 cancel 竞态。
+        """
+        self._gate_cancelled = True
+
+    def reset_active_gate(self) -> None:
+        """清除取消标志（事件线程在入队下一请求前调用；与 cancel 配对）。
+
+        不在门入口处重置：worker 被调度时 cancel 可能已先行置位，入口重置
+        会覆盖它并让门挂满 readiness_timeout。
+        """
+        self._gate_cancelled = False
 
     async def _run_readiness_gate(
         self, key: ToolExecutionKey, server_url: str, weights_dir: str
@@ -460,6 +488,10 @@ class Kai0ServeSessionEndpoint:
     async def _wait_healthz(self, server_url: str, timeout_s: float) -> bool:
         deadline = self._clock() + timeout_s
         while self._clock() < deadline:
+            if self._gate_cancelled:
+                raise _GateFailure(
+                    "cancelled", "readiness gate cancelled before healthz became ready"
+                )
             if self._health_probe(server_url, self._health_timeout_s):
                 return True
             await asyncio.sleep(self._poll_interval_s)

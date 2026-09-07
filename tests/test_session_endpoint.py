@@ -690,3 +690,61 @@ async def test_binding_invoke_rejected_on_readiness_failure(tmp_path):
     assert isinstance(rejected, ToolError)
     assert rejected.code == "READINESS_FAIL"
     assert rejected.retryable is True
+
+
+# —— 门取消：shutdown 不必等满 readiness_timeout ——
+
+
+async def test_cancel_active_gate_aborts_wait_and_tears_down_owned(tmp_path, monkeypatch):
+    """取消门：healthz 等待中止、owned 进程 teardown、start 报 stage=cancelled。"""
+    probe, calls = make_probe_sequence([False])  # attach 失败 → launch → 门等待（600s）
+    popen = RecordingPopen()
+    signals: list[int] = []
+    monkeypatch.setattr(se, "_signal_group", lambda pgid, sig: signals.append(sig))
+    monkeypatch.setattr(se, "_group_alive", lambda pgid: False)
+    endpoint = make_endpoint(
+        tmp_path,
+        health_probe=probe,
+        popen_factory=popen,
+        readiness_timeout_s=600.0,  # 只有取消能终止，超时路径不可达
+    )
+    task = asyncio.create_task(
+        endpoint.start(make_request(), make_context("inv-cancel"), FakeEmitter())
+    )
+    await asyncio.sleep(0.05)  # 已 launch 并进入 healthz 轮询
+    assert not task.done()
+    endpoint.cancel_active_gate()
+    with pytest.raises(ToolEndpointError) as caught:
+        await task
+    assert caught.value.error.code == "READINESS_FAIL"
+    assert caught.value.error.details["stage"] == "cancelled"
+    assert signals == [signal.SIGTERM]
+    assert popen.process.waits >= 1
+    # 取消后 shutdown 无活跃会话、无需再杀进程
+    outcome = await endpoint.shutdown()
+    assert outcome.active_key is None
+    assert outcome.owned_process_terminated is False
+
+
+async def test_cancel_active_gate_sticky_until_reset(tmp_path, monkeypatch):
+    """取消是粘滞的：未 reset 的下一 launch 门立即中止；reset 后正常通过。"""
+    signals: list[int] = []
+    monkeypatch.setattr(se, "_signal_group", lambda pgid, sig: signals.append(sig))
+    monkeypatch.setattr(se, "_group_alive", lambda pgid: False)
+    probe, _ = make_probe_sequence([False, False, False, True])
+    endpoint = make_endpoint(
+        tmp_path,
+        health_probe=probe,
+        popen_factory=RecordingPopen(),
+        readiness_timeout_s=600.0,  # 只有取消能终止，超时路径不可达
+    )
+    endpoint.cancel_active_gate()
+    with pytest.raises(ToolEndpointError) as caught:
+        await endpoint.start(make_request(), make_context("inv-cancelled-gate"), FakeEmitter())
+    assert caught.value.error.details["stage"] == "cancelled"
+    assert signals == [signal.SIGTERM]  # launch 的进程已 teardown
+    # 事件线程入队下一请求前显式 reset → 门正常通过
+    endpoint.reset_active_gate()
+    accepted = await endpoint.start(make_request(), make_context("inv-after-reset"), FakeEmitter())
+    assert isinstance(accepted, ToolAccepted)
+    assert accepted.details["owned"] is True
