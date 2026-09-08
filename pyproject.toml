@@ -1,6 +1,6 @@
 [project]
 name = "kai0-inference"
-version = "1.0.3"
+version = "1.0.4"
 description = "kai0 (openpi/JAX) policy node for Forge: WS client adapter with Dora inference runtime"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"

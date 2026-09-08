@@ -31,7 +31,10 @@ datas = [
 
 a = Analysis(
     [os.path.join(SPEC_DIR, "kai0_policy_entry.py")],
-    pathex=[],
+    # 钉死仓库工作树优先：site-packages 里的 kai0_inference 是 copy 安装，
+    # 曾把过期 venv 的旧码打进 bundle（1.0.3 事故）。pathex 置 ROOT 后，
+    # 即使构建解释器的 site-packages 过期，Analysis 仍从工作树解析包。
+    pathex=[ROOT],
     binaries=binaries,
     datas=datas,
     hiddenimports=[],
