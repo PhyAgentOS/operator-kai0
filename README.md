@@ -13,6 +13,35 @@ kai0（χ₀）是一个基于 openpi 开发的具身操作策略模型，其权
 `server/` 则以独立进程运行 JAX/openpi 推理，承担权重加载与模型推理，两端经 WebSocket
 通信。
 
+## Node、Endpoint 与 Tool API / Capability summary
+
+| 项目 | 当前实现 |
+| --- | --- |
+| 生产 Node | 1 个推理 Node：`kai0 infer`；Node 打包 entrypoint 为 `kai0_policy`，见 [build/make_node_bundle.sh](build/make_node_bundle.sh)；`infer-once` 是离线 CLI，不另计 Node |
+| Tool 支持 | 可选 provider 模式：推理配置 `mode: session_endpoint`；默认 `dora_plain` 不注册 Endpoint |
+| Endpoint 数 | provider 模式为 1：`policy.runner`；plain 模式为 0 |
+| operation 数 | provider 模式为 1：`serve`（Session，可 stop、可查状态，最大并发 1） |
+| 直接 HTTP Tool API | 0；`tool_in/tool_out` 通过 Dora 接入 Gateway |
+| Gateway Tool 数 | 由 Skill/Gateway `tools.specs` 决定，仓库不固定外部 Tool ID |
+
+调用映射为 `<tool_id from tools.specs> -> policy.runner / serve -> kai0 infer`。
+会话 attach 或启动独立 openpi 推理服务，执行就绪门并按进程所有权处理 stop；外部推理服务不是额外的 Dora Node。
+
+Session 使用 stop，不应替换成 Action cancel。对外调用通过 Gateway
+`POST /tools/{tool_id}:invoke`，随后读取 invocation 状态/结果；停止使用
+`POST /invocations/{invocation_id}/stop`。HTTP 路由属于 Gateway，Node 内的推理服务接口不算 Tool API。
+
+Kai0 与 LeRobot 使用相同 `policy.runner` Endpoint ID；同一 Gateway 中该 ID 只有一个 current instance，
+两者应作为部署候选选择，不能仅用不同 Node ID 就假定能同时成为独立路由。
+
+实现与启用条件：[descriptor](inference/session_endpoint.py)、[runner](inference/session_runner.py)、
+[配置校验](inference/config.py)、[推理入口](inference/main.py)。
+Gateway 当前源码实现 Session，但历史二进制可能不同，需核对配套版本与依赖锁。
+
+兼容性：当前依赖声明为 `forge-msgs==1.2.0`、`forge-common==1.0.1`、`forge-policy==1.0.1`、`forge-tool[dora]==1.0.0`、`dora-rs==0.4.1`；以 [pyproject.toml](pyproject.toml) 与 [uv.lock](uv.lock) 为准。 这些声明不构成跨版本互操作保证；使用制品时还需核对 build revision 和 Skill lock。
+
+后续修改 Node 入口、Endpoint 或 Tool API 时，请同步更新本节及对应配置/契约，遵循 [Node README 规范](https://github.com/PhyAgentOS/forge/blob/master/CONTRIBUTING.md#node-readme-contract)。
+
 ## 系统架构
 
 系统分三层，服务端与客户端之间走 WebSocket 协议，客户端与环境侧之间走 Dora 数据流：
@@ -47,7 +76,7 @@ kai0（χ₀）是一个基于 openpi 开发的具身操作策略模型，其权
 两个环境分开装：**客户端**（uv 依赖）与**推理服务端**（JAX 依赖）。
 
 要求：Linux x86_64、Python 3.12、[uv](https://docs.astral.sh/uv/)；客户端安装时需能访问
-Forge 依赖仓库（forge-msgs / forge-common / forge-policy 为 git 源 1.0.0 发布版）；
+公开 Python 包索引（Forge 版本由 `pyproject.toml` / `uv.lock` 固定，无 Forge git 来源）；
 服务端安装（`server/setup.sh`）还需访问 github.com（lerobot 依赖）。推理服务端额外需要
 NVIDIA GPU（JAX CUDA，实测显存峰值 12.8GB / 16GB 卡、推理 ~255ms）；客户端为轻量
 WS 进程、不占显存（dummy infer-once 实测峰值 RSS ≈ 44MB）。**仿真与真机侧**均需
