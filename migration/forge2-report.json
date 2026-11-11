@@ -1,7 +1,6 @@
 {
   "repository": "operator-kai0",
   "node_candidate_version": "2.0.0",
-  "baseline_commit": "ac5d7c898303e4453a54b924c0999aa3e08ab1d7",
   "changes": [
     "Upgrade inference package and dual-arm examples/vendor compatibility metadata.",
     "Replace old Forge Git-tag overrides with public 2.x packages; model-server dependencies are unchanged.",
