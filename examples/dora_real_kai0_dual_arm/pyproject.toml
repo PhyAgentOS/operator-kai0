@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "双臂真机闭环示例的合并环境：kai0_policy 节点 + task_robot + piper_slave×2 + usb_camera×3 的统一 uv 运行环境（源码模式）"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "dora-rs==0.4.1",
+    "dora-rs>=1.0.1,<2",
     # forge-msgs / forge-common 由 kai0-inference 依赖传递（git 源 1.0.0 发布版），
     # 并在下方 [tool.uv.sources] 显式声明同源，供机器人节点（robot-core）解析。
     "kai0-inference>=0.1.0",
@@ -27,9 +27,6 @@ forge-robots-msgs = { path = "vendor/forge_robots_msgs" }
 robots-piper = { path = "vendor/robots_piper" }
 robot-core = { path = "vendor/robot_core" }
 # 与 kai0-inference 的 sources 一致（同一 tag 发布版），供 robot-core 的 forge-msgs 依赖解析
-forge-msgs = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-msgs-v1.0.0", subdirectory = "packages/msgs" }
-forge-common = { git = "https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git", tag = "forge-common-v1.0.0", subdirectory = "packages/common" }
-
 [dependency-groups]
 dev = []
 
@@ -39,6 +36,6 @@ dev = []
 # 以 override 统一到 1.0.0 发布版（与策略节点同版，避免线格式漂移）。
 # 真机联调时若机器人节点报 forge_msgs schema 差异，再评估切到 dev 源。
 override-dependencies = [
-    "forge-msgs @ git+https://gitlab.ex-ai.cn/PhyAgentOS/framework/forge.git@forge-msgs-v1.0.0#subdirectory=packages/msgs",
+    "forge-msgs>=2.0.0,<3",
 ]
 package = false

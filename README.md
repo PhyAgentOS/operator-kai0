@@ -39,7 +39,7 @@ Implementation and activation: [descriptor](inference/session_endpoint.py), [run
 [configuration validation](inference/config.py), [inference entrypoint](inference/main.py).
 Current Gateway source implements Session; historical binaries may differ, so check paired revisions and locks.
 
-Compatibility: current dependency declarations are `forge-msgs==1.2.0`, `forge-common==1.0.1`, `forge-policy==1.0.1`, `forge-tool[dora]==1.0.0`, `dora-rs==0.4.1`. See [pyproject.toml](pyproject.toml) and [uv.lock](uv.lock). These declarations do not guarantee cross-version interoperability; also check the build revision and Skill lock when using artifacts.
+Compatibility: current dependency declarations are `forge-msgs>=2.0.0,<3`, `forge-common>=2.1.0,<3`, `forge-policy>=2.0.0,<3`, `forge-tool[dora]>=2.0.0,<3`, `dora-rs>=1.0.1,<2`. See [pyproject.toml](pyproject.toml) and [uv.lock](uv.lock). These declarations do not guarantee cross-version interoperability; also check the build revision and Skill lock when using artifacts.
 
 Changes to Node entrypoints, Endpoints or Tool APIs must update this section and the associated configuration/contracts. Follow the [Node README contract](https://github.com/PhyAgentOS/forge/blob/master/CONTRIBUTING.md#node-readme-contract).
 
@@ -187,3 +187,9 @@ See `config/inference/README.md` for fields and `inference/contract.py` for join
 ├── test/                  # Protocol-level fake_policy_server; see its README
 └── tests/                 # Unit tests
 ```
+
+## Forge 2.x migration
+
+This branch prepares node version `2.0.0` for Dora 1.x, frozen to Dora `1.0.1` for migration validation. It uses the official Forge 2.x distributions; Common is at least `2.1.0`. Regenerated locks and all executable entrypoints are part of the change.
+
+Every change report must list repository, changes and test evidence, including per-node `dora run` records and a chained test containing `adapter-forge-gateway`. Unavailable hardware/model checks remain pending. Source PRs do not publish stable releases or synchronize GitLab; synchronization follows full acceptance.

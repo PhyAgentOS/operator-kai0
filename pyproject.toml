@@ -1,6 +1,6 @@
 [project]
 name = "kai0-inference"
-version = "1.0.4"
+version = "2.0.0"
 description = "kai0 (openpi/JAX) policy node for Forge: WS client adapter with Dora inference runtime"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -14,12 +14,12 @@ dependencies = [
     "msgpack>=1.0.5",
 
     # forge 家族全 PyPI 发行版（无 git 来源）：forge-msgs 1.2.0 起含 ToolMessage，
-    # forge-tool[dora]==1.0.0 含完整 session SPI 与 dora 载波
-    "forge-msgs==1.2.0",
-    "forge-common==1.0.1",
-    "forge-policy==1.0.1",
-    "forge-tool[dora]==1.0.0",
-    "dora-rs==0.4.1",
+    # forge-tool[dora] 2.x 提供 session SPI 与 Dora 1.x 载波
+    "forge-msgs>=2.0.0,<3",
+    "forge-common>=2.1.0,<3",
+    "forge-policy>=2.0.0,<3",
+    "forge-tool[dora]>=2.0.0,<3",
+    "dora-rs>=1.0.1,<2",
 ]
 
 [project.optional-dependencies]

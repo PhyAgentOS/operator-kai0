@@ -1,0 +1,131 @@
+{
+  "repository": "operator-kai0",
+  "node_candidate_version": "2.0.0",
+  "baseline_commit": "ac5d7c898303e4453a54b924c0999aa3e08ab1d7",
+  "changes": [
+    "Upgrade inference package and dual-arm examples/vendor compatibility metadata.",
+    "Replace old Forge Git-tag overrides with public 2.x packages; model-server dependencies are unchanged.",
+    "Synchronize English/Chinese root README guidance and frozen dependencies."
+  ],
+  "software_tests": {
+    "log": "tests.log",
+    "summary": [
+      "141 passed in 8.65s"
+    ]
+  },
+  "dora_cli": "1.0.1",
+  "runtime_records": [
+    {
+      "repo": "operator-kai0",
+      "entry": "kai0-dummy",
+      "mode": "single",
+      "command": [
+        "${WORKSPACE}/.test-env/bin/dora",
+        "run",
+        "${WORKSPACE}/validation/forge2/runtime/kai0-dummy/single/dataflow.yaml",
+        "--stop-after",
+        "6s"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 6.118,
+      "passed": true,
+      "error": null,
+      "scope": "Startup, timer processing and normal Dora stop only; no hardware or action execution."
+    },
+    {
+      "repo": "operator-kai0",
+      "entry": "kai0-dummy",
+      "command": [
+        "${WORKSPACE}/.test-env/bin/dora",
+        "run",
+        "${WORKSPACE}/validation/forge2/runtime/kai0-dummy/chain/dataflow.yaml",
+        "--stop-after",
+        "10s"
+      ],
+      "includes_gateway": true,
+      "passed": true,
+      "scope": "Production node with simulated state/actuator; Gateway receives state and commands. No hardware.",
+      "state": {
+        "running_time": 0.848,
+        "current_frame_count": 17,
+        "sensors": {
+          "joints": {
+            "robot_left/joint1": 0.0,
+            "robot_left/joint2": 0.0,
+            "robot_left/joint3": 0.0,
+            "robot_left/joint4": 0.0,
+            "robot_left/joint5": 0.0,
+            "robot_left/joint6": 0.0,
+            "robot_left/gripper": 0.0,
+            "robot_right/joint1": 0.0,
+            "robot_right/joint2": 0.0,
+            "robot_right/joint3": 0.0,
+            "robot_right/joint4": 0.0,
+            "robot_right/joint5": 0.0,
+            "robot_right/joint6": 0.0,
+            "robot_right/gripper": 0.0
+          },
+          "command": {
+            "robot_left/joint1": 0.0,
+            "robot_left/joint2": 0.0,
+            "robot_left/joint3": 0.0,
+            "robot_left/joint4": 0.0,
+            "robot_left/joint5": 0.0,
+            "robot_left/joint6": 0.0,
+            "robot_left/gripper": 0.03,
+            "robot_right/joint1": 0.0,
+            "robot_right/joint2": 0.0,
+            "robot_right/joint3": 0.0,
+            "robot_right/joint4": 0.0,
+            "robot_right/joint5": 0.0,
+            "robot_right/joint6": 0.0,
+            "robot_right/gripper": 0.03
+          }
+        },
+        "runtime": {
+          "phase": "running",
+          "sim_status": {
+            "status_name": "UNINITIALIZED",
+            "status_code": 0
+          },
+          "record_status": {
+            "record_state": "IDLE",
+            "episode_count": 0,
+            "current_frame_count": 0
+          },
+          "playback_status": {
+            "playback_state": "IDLE",
+            "current_time_ns": 0,
+            "total_messages": 0,
+            "mcap_path": null,
+            "error": null
+          },
+          "readiness": {
+            "ready": true,
+            "missing": [],
+            "runtime_phase": "running",
+            "proprio_state_ready": true,
+            "required_images_ready": true,
+            "images": {},
+            "state_clients": 1,
+            "image_clients": 0,
+            "state_client_ready": true,
+            "image_client_ready": false
+          },
+          "last_error": null
+        }
+      },
+      "exit_code": 0,
+      "fixture": {
+        "passed": true,
+        "commands": 444,
+        "terminal_results": [],
+        "scope": "Simulated actuator only"
+      }
+    }
+  ],
+  "runtime_missing": null,
+  "acceptance": "Pending final platform artifacts, applicable hardware/model execution and rollback/sustained-run gates.",
+  "pillow_dependency": "Node locks currently resolve published Forge Msgs 2.0.0. Security audit remains dependent on Forge PR #3 and a published security-fixed Msgs release; no vulnerability suppression was added.",
+  "gitlab_synchronization": "Not started; follows full acceptance."
+}
