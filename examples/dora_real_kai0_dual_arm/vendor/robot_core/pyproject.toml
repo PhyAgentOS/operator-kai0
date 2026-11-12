@@ -5,8 +5,8 @@ description = "VENDOR（修复版）：forge_robots robot_core，用于真机示
 readme = "VENDOR.md"
 requires-python = ">=3.12"
 dependencies = [
-    "dora-rs==0.4.1",
-    "forge-msgs",
+    "dora-rs>=1.0.1,<2",
+    "forge-msgs>=2.0.0,<3",
 ]
 
 [build-system]

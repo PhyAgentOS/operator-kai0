@@ -5,7 +5,7 @@ description = "VENDOR：Piper 硬件驱动（上游 forge_robots packages/piper�
 readme = "VENDOR.md"
 requires-python = ">=3.12"
 dependencies = [
-    "forge-common",
+    "forge-common>=2.1.0,<3",
     "forge-robots-msgs",
     "piper-sdk>=0.6.1",
     "python-can>=4.0",

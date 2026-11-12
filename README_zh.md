@@ -2,6 +2,14 @@
 
 [English](README.md) | [简体中文](README_zh.md)
 
+## BREAKING CHANGE：Forge 2.x / Dora 1.x 迁移
+
+本次从 Forge 1.x / Dora 0.4.x 升级需要协同部署。节点对接前必须对齐 Forge 包、Dora CLI/coordinator/daemon、本节点及上下游节点的版本；不支持在 Forge 1.x 部署中只替换单个节点。可执行产物也需要使用匹配环境重新构建和部署。仍使用旧技术栈的部署请保留在 `stable/1.x`。
+
+本轮验证的 Python 基线为 `forge-msgs==2.1.0`、`Pillow==13.0.0`、`forge-common==2.1.0`、按需使用的 `forge-robot` / `forge-policy` / `forge-kinematics` / `forge-tool` 为 `2.0.0`，以及 `dora-rs==1.0.1`。同时遵守本仓库的 Python 和 SDK 平台要求。Forge 各包族独立发布，无需强行使用同一个版本号。Rust 节点继续使用已发布的 `forge_msgs` crate `2.0.0` 和 Dora `1.0.1`；Python Msgs `2.1.0` 不要求升级到尚未发布的 Rust `2.1.0`。消息命名空间 `forge_msgs.v1` 保持不变。
+
+这里的 breaking change 指旧技术栈的部署迁移，不代表真机、真实模型或长时间运行已完成验收。实际测试和未完成项见[本轮验证报告](migration/msgs-2.1.0-report.json)。
+
 > **🚀 真机部署请看 [real_deploy.md](real_deploy.md)**——从环境安装、现场硬件确认
 > （CAN 端口 / 相机）、无硬件验收（mock）到真机启动的完整操作手册，含命令示例、
 > 期望输出与常见问题排查。真机部署一律以该文档为准。
@@ -40,7 +48,7 @@ Kai0 与 LeRobot 使用相同 `policy.runner` Endpoint ID；同一 Gateway 中�
 [配置校验](inference/config.py)、[推理入口](inference/main.py)。
 Gateway 当前源码实现 Session，但历史二进制可能不同，需核对配套版本与依赖锁。
 
-兼容性：当前依赖声明为 `forge-msgs==1.2.0`、`forge-common==1.0.1`、`forge-policy==1.0.1`、`forge-tool[dora]==1.0.0`、`dora-rs==0.4.1`；以 [pyproject.toml](pyproject.toml) 与 [uv.lock](uv.lock) 为准。 这些声明不构成跨版本互操作保证；使用制品时还需核对 build revision 和 Skill lock。
+兼容性：当前依赖声明为 `forge-msgs>=2.0.0,<3`、`forge-common>=2.1.0,<3`、`forge-policy>=2.0.0,<3`、`forge-tool[dora]>=2.0.0,<3`、`dora-rs>=1.0.1,<2`；以 [pyproject.toml](pyproject.toml) 与 [uv.lock](uv.lock) 为准。 这些声明不构成跨版本互操作保证；使用制品时还需核对 build revision 和 Skill lock。
 
 后续修改 Node 入口、Endpoint 或 Tool API 时，请同步更新本节及对应配置/契约，遵循 [Node README 规范](https://github.com/PhyAgentOS/forge/blob/master/CONTRIBUTING.md#node-readme-contract)。
 
@@ -189,3 +197,9 @@ bash scripts/start_real.sh
 ├── test/                  # 测试配套：fake_policy_server（协议级假服务端，见 test/fake_policy_server/README.md）
 └── tests/                 # 单元测试
 ```
+
+## Forge 2.x 迁移
+
+本分支准备节点版本 `2.0.0`，适配 Dora 1.x，迁移验证锁定 Dora `1.0.1`。使用正式 Forge 2.x 分发包；Common 至少为 `2.1.0`。此次更新包括依赖锁文件与各独立可执行入口。
+
+每轮报告必须列出仓库、改动和测试证据，包括各节点的 `dora run` 记录，以及包含 `adapter-forge-gateway` 的串联测试。缺少硬件或模型的验收项保持待验证。源码 PR 不等于正式发布；整体验收通过后再同步 GitLab。
