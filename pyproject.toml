@@ -15,7 +15,7 @@ dependencies = [
 
     # forge 家族全 PyPI 发行版（无 git 来源）：forge-msgs 1.2.0 起含 ToolMessage，
     # forge-tool[dora] 2.x 提供 session SPI 与 Dora 1.x 载波
-    "forge-msgs>=2.0.0,<3",
+    "forge-msgs>=2.1.0,<3",
     "forge-common>=2.1.0,<3",
     "forge-policy>=2.0.0,<3",
     "forge-tool[dora]>=2.0.0,<3",

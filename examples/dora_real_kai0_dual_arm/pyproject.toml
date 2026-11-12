@@ -36,6 +36,6 @@ dev = []
 # 以 override 统一到 1.0.0 发布版（与策略节点同版，避免线格式漂移）。
 # 真机联调时若机器人节点报 forge_msgs schema 差异，再评估切到 dev 源。
 override-dependencies = [
-    "forge-msgs>=2.0.0,<3",
+    "forge-msgs>=2.1.0,<3",
 ]
 package = false

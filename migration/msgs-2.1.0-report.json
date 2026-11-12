@@ -1,0 +1,286 @@
+{
+  "repository": "operator-kai0",
+  "round": "msgs-2.1.0 alignment / 2026-11-12",
+  "breaking_change": "Forge 1.x / Dora 0.4.x to Forge 2.x / Dora 1.x requires aligned Forge packages, runtime services, node peers and rebuilt artifacts. Forge families version independently. forge_msgs.v1 remains unchanged.",
+  "changes": [
+    "Update paired README deployment/version compatibility notice",
+    "Require Python forge-msgs >=2.1.0,<3 and lock public Msgs 2.1.0 / Pillow 13.0.0, preserving all other locked package versions"
+  ],
+  "lock_updates": [
+    {
+      "repo": "operator-kai0",
+      "lock": "examples/dora_real_kai0_dual_arm/uv.lock",
+      "command": [
+        "${WORKSPACE}/.tools/bin/uv",
+        "lock",
+        "--upgrade-package",
+        "forge-msgs==2.1.0",
+        "--upgrade-package",
+        "pillow==13.0.0"
+      ],
+      "exit_code": 0,
+      "version_changes": [
+        {
+          "name": "forge-msgs",
+          "before": "2.0.0",
+          "after": "2.1.0"
+        },
+        {
+          "name": "pillow",
+          "before": "12.3.0",
+          "after": "13.0.0"
+        }
+      ]
+    },
+    {
+      "repo": "operator-kai0",
+      "lock": "examples/dora_sim_kai0_dual_arm/uv.lock",
+      "command": [
+        "${WORKSPACE}/.tools/bin/uv",
+        "lock",
+        "--upgrade-package",
+        "forge-msgs==2.1.0",
+        "--upgrade-package",
+        "pillow==13.0.0"
+      ],
+      "exit_code": 0,
+      "version_changes": [
+        {
+          "name": "forge-msgs",
+          "before": "2.0.0",
+          "after": "2.1.0"
+        },
+        {
+          "name": "pillow",
+          "before": "12.3.0",
+          "after": "13.0.0"
+        }
+      ]
+    },
+    {
+      "repo": "operator-kai0",
+      "lock": "uv.lock",
+      "command": [
+        "${WORKSPACE}/.tools/bin/uv",
+        "lock",
+        "--upgrade-package",
+        "forge-msgs==2.1.0",
+        "--upgrade-package",
+        "pillow==13.0.0"
+      ],
+      "exit_code": 0,
+      "version_changes": [
+        {
+          "name": "forge-msgs",
+          "before": "2.0.0",
+          "after": "2.1.0"
+        },
+        {
+          "name": "pillow",
+          "before": "12.3.0",
+          "after": "13.0.0"
+        }
+      ]
+    }
+  ],
+  "lock_checks": [
+    {
+      "repo": "operator-kai0",
+      "lock": "examples/dora_real_kai0_dual_arm/uv.lock",
+      "check_exit": 0
+    },
+    {
+      "repo": "operator-kai0",
+      "lock": "examples/dora_sim_kai0_dual_arm/uv.lock",
+      "check_exit": 0
+    },
+    {
+      "repo": "operator-kai0",
+      "lock": "uv.lock",
+      "check_exit": 0
+    }
+  ],
+  "software_tests": {
+    "repo": "operator-kai0",
+    "environment": "${WORKSPACE}/operator-kai0/.venv/bin/python",
+    "commands": [
+      [
+        "${WORKSPACE}/.tools/bin/uv",
+        "pip",
+        "install",
+        "--python",
+        "${WORKSPACE}/operator-kai0/.venv/bin/python",
+        "--no-deps",
+        "--index-url",
+        "https://pypi.org/simple",
+        "forge-msgs==2.1.0",
+        "pillow==13.0.0"
+      ],
+      [
+        "${WORKSPACE}/operator-kai0/.venv/bin/python",
+        "-c",
+        "from importlib.metadata import version; import json; print(json.dumps({n:version(n) for n in ['forge-msgs','pillow','dora-rs']}))"
+      ],
+      [
+        "${WORKSPACE}/.tools/bin/uv",
+        "pip",
+        "check",
+        "--python",
+        "${WORKSPACE}/operator-kai0/.venv/bin/python"
+      ],
+      [
+        "${WORKSPACE}/operator-kai0/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--import-mode=importlib"
+      ]
+    ],
+    "scope": "Existing local test environment with exact public Msgs/Pillow update; platform SDK exclusions are reported, not production acceptance.",
+    "update_exit": 0,
+    "versions_exit": 0,
+    "dependency_check_exit": 0,
+    "tests_exit": 0,
+    "test_summary": [
+      "${WORKSPACE}/operator-kai0/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:300: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.",
+      "The event loop scope for asynchronous fixtures will default to the \"fixture\" caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to \"function\" scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"",
+      "",
+      "  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))",
+      "........................................................................ [ 51%]",
+      ".....................................................................    [100%]",
+      "141 passed in 5.62s"
+    ],
+    "installed_versions": {
+      "forge-msgs": "2.1.0",
+      "pillow": "13.0.0",
+      "dora-rs": "1.0.1"
+    }
+  },
+  "dependency_audit": {
+    "repo": "operator-kai0",
+    "audit_exit": 0,
+    "findings": [],
+    "skipped": []
+  },
+  "dora_run_records": [
+    {
+      "repo": "operator-kai0",
+      "entry": "kai0-dummy",
+      "command": [
+        "${WORKSPACE}/.test-env/bin/dora",
+        "run",
+        "${WORKSPACE}/validation/downstream-msgs210-20261112/runtime/kai0-dummy/chain/dataflow.yaml",
+        "--stop-after",
+        "10s"
+      ],
+      "includes_gateway": true,
+      "passed": true,
+      "scope": "Production node with simulated state/actuator; Gateway receives state and commands. No hardware.",
+      "state": {
+        "running_time": 0.727,
+        "current_frame_count": 5,
+        "sensors": {
+          "joints": {
+            "robot_left/joint1": 0.0,
+            "robot_left/joint2": 0.0,
+            "robot_left/joint3": 0.0,
+            "robot_left/joint4": 0.0,
+            "robot_left/joint5": 0.0,
+            "robot_left/joint6": 0.0,
+            "robot_left/gripper": 0.0,
+            "robot_right/joint1": 0.0,
+            "robot_right/joint2": 0.0,
+            "robot_right/joint3": 0.0,
+            "robot_right/joint4": 0.0,
+            "robot_right/joint5": 0.0,
+            "robot_right/joint6": 0.0,
+            "robot_right/gripper": 0.0
+          },
+          "command": {
+            "robot_left/joint1": 0.0,
+            "robot_left/joint2": 0.0,
+            "robot_left/joint3": 0.0,
+            "robot_left/joint4": 0.0,
+            "robot_left/joint5": 0.0,
+            "robot_left/joint6": 0.0,
+            "robot_left/gripper": 0.03,
+            "robot_right/joint1": 0.0,
+            "robot_right/joint2": 0.0,
+            "robot_right/joint3": 0.0,
+            "robot_right/joint4": 0.0,
+            "robot_right/joint5": 0.0,
+            "robot_right/joint6": 0.0,
+            "robot_right/gripper": 0.03
+          }
+        },
+        "runtime": {
+          "phase": "running",
+          "sim_status": {
+            "status_name": "UNINITIALIZED",
+            "status_code": 0
+          },
+          "record_status": {
+            "record_state": "IDLE",
+            "episode_count": 0,
+            "current_frame_count": 0
+          },
+          "playback_status": {
+            "playback_state": "IDLE",
+            "current_time_ns": 0,
+            "total_messages": 0,
+            "mcap_path": null,
+            "error": null
+          },
+          "readiness": {
+            "ready": true,
+            "missing": [],
+            "runtime_phase": "running",
+            "proprio_state_ready": true,
+            "required_images_ready": true,
+            "images": {},
+            "state_clients": 1,
+            "image_clients": 0,
+            "state_client_ready": true,
+            "image_client_ready": false
+          },
+          "last_error": null
+        }
+      },
+      "exit_code": 0,
+      "fixture": {
+        "passed": true,
+        "commands": 449,
+        "terminal_results": [],
+        "scope": "Simulated actuator only"
+      },
+      "mode": "chain",
+      "source_report": "runtime/kai0-dummy/chain/report.json",
+      "runtime_errors": [],
+      "local_evidence": "Full original Dora log is retained under validation/downstream-msgs210-20261112/runtime/kai0-dummy/chain/dora.log"
+    },
+    {
+      "repo": "operator-kai0",
+      "entry": "kai0-dummy",
+      "mode": "single",
+      "command": [
+        "${WORKSPACE}/.test-env/bin/dora",
+        "run",
+        "${WORKSPACE}/validation/downstream-msgs210-20261112/runtime/kai0-dummy/single/dataflow.yaml",
+        "--stop-after",
+        "6s"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 6.112,
+      "passed": true,
+      "error": null,
+      "scope": "Startup, timer processing and normal Dora stop only; no hardware or action execution.",
+      "source_report": "runtime/kai0-dummy/single/report.json",
+      "runtime_errors": [],
+      "local_evidence": "Full original Dora log is retained under validation/downstream-msgs210-20261112/runtime/kai0-dummy/single/dora.log"
+    }
+  ],
+  "remaining": "Dummy policy only. Separate server/kai0_prompt_schedule Pillow 12.2.0 lock intentionally unchanged pending independent evaluation.",
+  "acceptance": "Pending; software checks, fake/dummy backends and negative prerequisite records are scoped evidence only. Every new multi-node graph contains adapter-forge-gateway.",
+  "gitlab_sync": "Not performed; follows completed acceptance.",
+  "log_publication": "Original logs remain in the local validation workspace. This public report publishes reviewed commands, outcomes, assertions and limitations only."
+}

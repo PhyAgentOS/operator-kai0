@@ -43,7 +43,7 @@ wheels = [
 
 [[package]]
 name = "forge-msgs"
-version = "2.0.0"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
@@ -51,9 +51,9 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/94/f8/abf1d497297802e078c9ca6284fb93146c966477b715d2aa0f65d359a62e/forge_msgs-2.0.0.tar.gz", hash = "sha256:77ed5f3f416d67018c8df57aebc4fea74ff8cf7895214b3d60336beb7ca79570", size = 41186, upload-time = "2026-09-04T04:08:36.406Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/77/92849427ec97f1eeac8acc9e3de89a96a440222a867d1e3875b05da61642/forge_msgs-2.1.0.tar.gz", hash = "sha256:56ec84f31331387e75efbf6773413ec2b92cbc46adec08bef2f47916b22a6de3", size = 41181, upload-time = "2026-11-12T07:02:08.661Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/74/a1e79e58373e7a761fbd848ae127e4eeb00327cdc09791deab02b84ec580/forge_msgs-2.0.0-py3-none-any.whl", hash = "sha256:d2d1fe3bb82d5a2f275243b92b7b50db1e8f2d4326a8dde53ece2bdcb9292213", size = 52828, upload-time = "2026-09-04T04:08:35.506Z" },
+    { url = "https://files.pythonhosted.org/packages/48/c6/55ac34960091f3d38f07bd830951c6b3bfcfabf9fb7d4b15aeb0de642b26/forge_msgs-2.1.0-py3-none-any.whl", hash = "sha256:204e353cf6b6d715cba59935b970f29e2050b35c07dc24a843440377b91baee4", size = 52829, upload-time = "2026-11-12T07:02:07.58Z" },
 ]
 
 [[package]]
@@ -118,7 +118,7 @@ dev = [
 requires-dist = [
     { name = "dora-rs", specifier = ">=1.0.1,<2" },
     { name = "forge-common", specifier = ">=2.1.0,<3" },
-    { name = "forge-msgs", specifier = ">=2.0.0,<3" },
+    { name = "forge-msgs", specifier = ">=2.1.0,<3" },
     { name = "forge-policy", specifier = ">=2.0.0,<3" },
     { name = "forge-tool", extras = ["dora"], specifier = ">=2.0.0,<3" },
     { name = "msgpack", specifier = ">=1.0.5" },
@@ -161,12 +161,13 @@ wheels = [
 
 [[package]]
 name = "pillow"
-version = "12.3.0"
+version = "13.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1c/3d/bb7fca845737cf9d7dbde16ed1843984665ff2e0a518f5db43e77ec540b9/pillow-12.3.0.tar.gz", hash = "sha256:3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce", size = 47025035, upload-time = "2026-07-01T11:56:38.965Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/a4/9cc30690a394a8305e8be4c9036aa16d0dfddadd09079860b582f562496d/pillow-13.0.0.tar.gz", hash = "sha256:cdcd1ba258178f7356d74170c9a81ba4eab6a5d55748bc402a5a2a6fe6be3510", size = 47058631, upload-time = "2026-10-16T22:18:09.718Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/21/a35af28dcc61f37ed850a2d64c65c701321dfbf25085e469d5559360cbbf/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:78cb2c6865a35ab8ff8b75fd122f6033b92a62c82801110e48ddd6c936a45d91", size = 6940830, upload-time = "2026-07-01T11:54:13.732Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/72/cf78ac9780bb93c28328f408973845a309d4d145041665f734572ced1b52/pillow-12.3.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:0dd2064cbc55aaec028ef5fbb60fa47bb6c3e7918e07ff17935284b227a9d2df", size = 7052934, upload-time = "2026-07-01T11:54:17.721Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca", size = 7144542, upload-time = "2026-10-16T22:15:50.093Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/7c/45ee28531f89ee4582967d8a17f7a26d71ca64cd902b93c269590cd60a00/pillow-13.0.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:23edf4ec4b6f4f240e8df6e4985e9ee2ced86474632433e55fb1e2548744bf40", size = 7228137, upload-time = "2026-10-16T22:15:54.009Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/fe/a10aba5503ca13e9e009b8bd0a1a4ce5584bdce246245fd6f3a83701369c/pillow-13.0.0-pp312-pypy312_pp80-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e65dd6e75de67b2362a4fa3e16aa627595f65054dc4ec73d64680c84d592fa61", size = 6043514, upload-time = "2026-10-16T22:18:04.538Z" },
 ]
 
 [[package]]
