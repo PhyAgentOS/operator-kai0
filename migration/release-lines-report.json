@@ -15,16 +15,15 @@
     "artifacts": [
       {
         "name": "kai0_inference-2.0.0-py3-none-any.whl",
-        "size": 64355,
-        "sha256": "781c85b1e455b013ccc5ef33e3bf511e147cbe11b0ed9a8fe1ef6ea21d5a165d"
+        "size": 64355
       },
       {
         "name": "kai0_inference-2.0.0.tar.gz",
-        "size": 8364453,
-        "sha256": "6c352a8a99621bbde334950ff7e2227b402601fdfe3ed07bf6fcbc546f32ec3e"
+        "size": 8364453
       }
     ]
   },
+  "source_profile_scope": "Local candidate worktrees; proposed maintenance changes are not deployed or merged yet. Full checksums and raw logs remain in the local workspace.",
   "source_profiles": [
     {
       "repo": "PhyAgentOS/operator-kai0",
